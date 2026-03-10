@@ -1,0 +1,81 @@
+# Archivo de configuración de ejemplo para Nginx
+# Copiar a /etc/nginx/sites-available/app-ventas
+# Luego: sudo ln -s /etc/nginx/sites-available/app-ventas /etc/nginx/sites-enabled/
+
+server {
+    listen 80;
+    server_name tu-dominio.com www.tu-dominio.com;
+
+    # Logs
+    access_log /var/log/nginx/app-ventas_access.log;
+    error_log /var/log/nginx/app-ventas_error.log;
+
+    # Servir archivos estáticos del frontend (SPA)
+    location / {
+        root /var/www/app-ventas/dist;
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html;
+
+        # Headers de seguridad y cache
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer-when-downgrade" always;
+        add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+
+        # Cache para assets estáticos
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+    }
+
+    # Proxy para la API de FastAPI
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Timeouts
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+
+        # Headers importantes para FastAPI
+        proxy_set_header Accept-Encoding "";
+        proxy_set_header User-Agent $http_user_agent;
+    }
+
+    # Servir imágenes de uploads con cache optimizado
+    location /uploads/ {
+        alias /var/www/app-ventas/backend/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+
+        # Seguridad para imágenes
+        location ~* \.(png|jpg|jpeg|gif|svg)$ {
+            valid_referers none blocked server_names *.tu-dominio.com;
+            if ($invalid_referer) {
+                return 403;
+            }
+        }
+    }
+
+    # Seguridad adicional
+    location ~ /\. {
+        deny all;
+    }
+
+    location ~ \.(env|git|gitignore|htaccess|htpasswd)$ {
+        deny all;
+    }
+}
+
+# Redirect HTTP a HTTPS (opcional, si tienes SSL)
+# server {
+#     listen 80;
+#     server_name tu-dominio.com www.tu-dominio.com;
+#     return 301 https://$server_name$request_uri;
+# }

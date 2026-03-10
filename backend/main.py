@@ -2,13 +2,21 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import engine, Base, SessionLocal
+from dotenv import load_dotenv
 import models
 import auth
 from routers import products, sales, auth as auth_router, users, projects, promotions, analytics
 import os
 
+# Cargar variables de entorno
+load_dotenv()
+
+# Configuración desde variables de entorno
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+
 # Asegurar que existe el directorio uploads para los logos
-os.makedirs("uploads", exist_ok=True)
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Crear las tablas en la base de datos (SQLite)
 models.Base.metadata.create_all(bind=engine)
@@ -41,21 +49,14 @@ app = FastAPI(title="POS ERP System", description="Backend para el Sistema de Ve
 # Configurar CORS para permitir peticiones desde el frontend (React)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://87.99.141.78",
-        "http://87.99.141.78:80",
-        "http://87.99.141.78:5173",
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "*",  # Permite herramientas como Swagger UI; restringir en producción si se desea maximizar seguridad
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Servimos de forma estática la carpeta donde Pillow redimensiona y guarda las imágenes
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # Incluir routers
 app.include_router(auth_router.router)
