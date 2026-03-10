@@ -1,0 +1,2 @@
+[('users',), ('projects',), ('user_project',), ('products',), ('promotions',), ('sales',), ('promotion_product',), ('sale_details',)]
+[('superadmin', 'superadmin'), ('Administrador', 'admin')]

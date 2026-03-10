@@ -1,0 +1,103 @@
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Date, Table
+from sqlalchemy.orm import relationship
+from database import Base
+import datetime
+
+user_project = Table('user_project', Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id', ondelete='CASCADE')),
+    Column('project_id', Integer, ForeignKey('projects.id', ondelete='CASCADE'))
+)
+
+promotion_product = Table('promotion_product', Base.metadata,
+    Column('promotion_id', Integer, ForeignKey('promotions.id')),
+    Column('product_id', Integer, ForeignKey('products.id'))
+)
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
+    role = Column(String) # 'superadmin', 'admin', 'client'
+
+    projects = relationship("Project", secondary=user_project, back_populates="users")
+
+class Project(Base):
+    __tablename__ = "projects"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    description = Column(String, nullable=True)
+    
+    # Configuraciones de Suscripción y Visuales
+    status = Column(String, default="active") # 'active' o 'suspended'
+    membership_type = Column(String, default="mensual") # 'mensual', 'trimestral', 'anual', 'permanente'
+    currency = Column(String, default="PEN")
+    theme_color = Column(String, default="#2563eb") # Color default (Azul Tailwind)
+    logo_url = Column(String, nullable=True)
+
+    users = relationship("User", secondary=user_project, back_populates="projects", passive_deletes=True)
+    products = relationship("Product", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
+    sales = relationship("Sale", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
+    promotions = relationship("Promotion", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    
+    # Finanzas
+    cost = Column(Float, default=0.0) # Costo de Venta
+    margin = Column(Float, default=0.0) # Margen de Ganancia (Ej. 30 para 30%)
+    price = Column(Float) # Precio Público Sugerido
+    
+    stock = Column(Integer, default=0)
+    expiration_date = Column(Date, nullable=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete='CASCADE'))
+
+    project = relationship("Project", back_populates="products")
+    sale_details = relationship("SaleDetail", back_populates="product", cascade="all, delete-orphan", passive_deletes=True)
+    promotions = relationship("Promotion", secondary=promotion_product, back_populates="products")
+    barcodes = relationship("Barcode", back_populates="product", cascade="all, delete-orphan", passive_deletes=True)
+
+class Barcode(Base):
+    __tablename__ = "barcodes"
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, unique=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete='CASCADE'))
+    product = relationship("Product", back_populates="barcodes")
+
+class Promotion(Base):
+    __tablename__ = "promotions"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    discount_percentage = Column(Float)
+    start_date = Column(Date)
+    end_date = Column(Date)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete='CASCADE'))
+
+    project = relationship("Project", back_populates="promotions")
+    products = relationship("Product", secondary=promotion_product, back_populates="promotions")
+
+class Sale(Base):
+    __tablename__ = "sales"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(DateTime, default=datetime.datetime.utcnow)
+    total = Column(Float)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete='CASCADE'))
+
+    project = relationship("Project", back_populates="sales")
+    details = relationship("SaleDetail", back_populates="sale", cascade="all, delete-orphan", passive_deletes=True)
+
+class SaleDetail(Base):
+    __tablename__ = "sale_details"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sale_id = Column(Integer, ForeignKey("sales.id", ondelete='CASCADE'))
+    product_id = Column(Integer, ForeignKey("products.id", ondelete='CASCADE'))
+    quantity = Column(Integer)
+    price = Column(Float) # El precio unitario real con el que se cobró (con o sin descuento aplicado)
+
+    sale = relationship("Sale", back_populates="details")
+    product = relationship("Product", back_populates="sale_details")
