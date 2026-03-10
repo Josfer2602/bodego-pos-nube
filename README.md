@@ -15,6 +15,17 @@ Sistema completo Full-Stack con FastAPI en el Backend y React+Vite en el Fronten
 - **🔐 Autenticación JWT**: Seguridad completa
 - **☁️ Despliegue Automático**: Scripts incluidos para producción
 
+## 🎨 Personalización del Frontend
+
+Puedes cambiar el texto que aparece en la pestaña del navegador y el icono (favicon) editando el archivo `frontend/index.html`:
+
+```html
+<title>Mi nombre de sitio</title>
+<link rel="icon" href="/ruta/a/tu/favicon.ico" />
+```
+
+Coloca el archivo de tu icono en `frontend/public/` (por ejemplo `favicon.ico` o `logo.png`) y ajusta la ruta en el enlace.
+
 ## 📋 Requisitos
 - **Python 3.9+**
 - **Node.js 18+**
