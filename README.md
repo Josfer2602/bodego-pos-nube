@@ -33,6 +33,29 @@ Coloca el archivo de tu icono en `frontend/public/` (por ejemplo `favicon.ico` o
 
 ## 🛠️ Instalación y Desarrollo Local
 
+### 🚀 Inicio Rápido (Recomendado)
+
+Si tienes todos los requisitos instalados, ejecuta:
+
+```bash
+# Clonar repositorio
+git clone <tu-repo-url>
+cd respaldo_app_ventas
+
+# Instalar dependencias
+cd backend && pip install -r requirements.txt
+cd ../frontend && npm install
+
+# Iniciar todo automáticamente
+cd ..
+./start_dev.sh
+```
+
+### 📖 Guía Detallada
+
+Para instrucciones paso a paso completas, consulta:
+- **[LOCAL_DEPLOYMENT.md](LOCAL_DEPLOYMENT.md)** - Guía completa de despliegue local y GitHub
+
 ### 1. Clonar el repositorio
 ```bash
 git clone <tu-repo-url>
@@ -265,7 +288,9 @@ respaldo_app_ventas/
 │   └── dist/               # Build de producción
 ├── deploy.sh               # Script de despliegue automático
 ├── setup_server.sh        # Configuración inicial del servidor
+├── start_dev.sh           # Script para iniciar desarrollo local
 ├── backup_app.sh          # Script de backup
+├── LOCAL_DEPLOYMENT.md    # Guía completa de despliegue local y GitHub
 ├── nginx.conf.example     # Configuración de ejemplo para Nginx
 ├── backend.service.example # Servicio de ejemplo para systemd
 ├── .env.example           # Variables de entorno de ejemplo
