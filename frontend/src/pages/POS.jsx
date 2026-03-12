@@ -26,11 +26,11 @@ const POS = () => {
     const fetchProducts = async () => {
         try {
             // Cache busting con timestamp
-            const response = await api.get('/products/', { 
-                params: { 
+            const response = await api.get('/products/', {
+                params: {
                     project_id: activeProject,
                     _t: new Date().getTime()
-                } 
+                }
             });
             setProducts(response.data);
         } catch (error) {
@@ -314,19 +314,19 @@ const POS = () => {
                     <div className="mb-4">
                         <span className="text-sm font-medium text-gray-600 block mb-2">Método de Pago</span>
                         <div className="grid grid-cols-3 gap-2">
-                            <button 
+                            <button
                                 onClick={() => setPaymentMethod('efectivo')}
                                 className={`py-2 px-1 text-sm rounded-lg font-medium transition border ${paymentMethod === 'efectivo' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
                             >
                                 Efectivo
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setPaymentMethod('yape')}
                                 className={`py-2 px-1 text-sm rounded-lg font-medium transition border ${paymentMethod === 'yape' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
                             >
                                 Yape/Plin
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setPaymentMethod('tarjeta_credito')}
                                 className={`py-2 px-1 text-sm rounded-lg font-medium transition border ${paymentMethod === 'tarjeta_credito' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
                             >
@@ -348,7 +348,7 @@ const POS = () => {
                             disabled={cart.length === 0}
                             className={`w-full py-4 text-white text-lg font-bold rounded-xl flex items-center justify-center gap-2 transition ${cart.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 shadow-lg'}`}
                         >
-                            <CreditCard className="w-6 h-6" /> Confirmar e Imprimir
+                            <CreditCard className="w-6 h-6" /> Realizar Venta
                         </button>
                     )}
                 </div>
@@ -417,19 +417,19 @@ const POS = () => {
                             <div className="mb-4">
                                 <span className="text-sm font-medium text-gray-600 block mb-2">Método de Pago</span>
                                 <div className="grid grid-cols-3 gap-2">
-                                    <button 
+                                    <button
                                         onClick={() => setPaymentMethod('efectivo')}
                                         className={`py-2 px-1 text-xs rounded-lg font-medium transition border ${paymentMethod === 'efectivo' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
                                     >
                                         Efectivo
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setPaymentMethod('yape')}
                                         className={`py-2 px-1 text-xs rounded-lg font-medium transition border ${paymentMethod === 'yape' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
                                     >
                                         Yape/Plin
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setPaymentMethod('tarjeta_credito')}
                                         className={`py-2 px-1 text-xs rounded-lg font-medium transition border ${paymentMethod === 'tarjeta_credito' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
                                     >
@@ -473,11 +473,11 @@ const POS = () => {
                         </div>
                         <h2 className="text-2xl font-black text-gray-800 mb-2">¡Venta Exitosa!</h2>
                         <p className="text-gray-500 mb-6 font-medium">El pago ha sido procesado correctamente.</p>
-                        <button 
+                        <button
                             onClick={() => setShowSuccessModal(false)}
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition"
                         >
-                            Imprimir Ticket
+                            Cerrar
                         </button>
                     </div>
                 </div>
