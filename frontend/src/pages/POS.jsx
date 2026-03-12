@@ -11,6 +11,8 @@ const POS = () => {
     const [cart, setCart] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCart, setShowCart] = useState(false); // Para mobile: mostrar/ocultar carrito
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState('efectivo'); // 'efectivo', 'yape', 'tarjeta_credito'
 
     const currencySymbol = projectDetails?.currency === 'USD' ? '$' : projectDetails?.currency === 'EUR' ? '€' : 'S/';
 
@@ -146,11 +148,15 @@ const POS = () => {
                     product_id: item.product_id,
                     quantity: item.quantity,
                     price: item.price
-                }))
+                })),
+                payment_method: paymentMethod
             };
 
             await api.post('/sales/', payload);
-            alert('¡Venta realizada con éxito!');
+            setShowSuccessModal(true);
+            setTimeout(() => {
+                setShowSuccessModal(false);
+            }, 3000);
             setCart([]);
             fetchProducts();
         } catch (error) {
@@ -159,14 +165,15 @@ const POS = () => {
     };
 
     const filteredProducts = products.filter(product => {
-        const today = new Date();
-        const expDate = product.expiration_date ? new Date(product.expiration_date) : null;
-        let isExpired = false;
-        if (expDate && expDate.getTime() < today.getTime()) {
-            isExpired = true; // Excluimos alimentos expirados
-        }
-        return product.name.toLowerCase().includes(searchQuery.toLowerCase()) && !isExpired;
+        return product.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
+
+    const isProductExpired = (product) => {
+        if (!product.expiration_date) return false;
+        const today = new Date();
+        const expDate = new Date(product.expiration_date);
+        return expDate.getTime() < today.getTime();
+    };
 
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden">
@@ -227,6 +234,11 @@ const POS = () => {
                                     {pricing.hasDiscount && (
                                         <div className="absolute top-2 right-2 bg-red-500 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow-sm flex items-center gap-1 z-10">
                                             <Tag className="w-3 h-3" /> -{pricing.percentage}%
+                                        </div>
+                                    )}
+                                    {isProductExpired(product) && (
+                                        <div className="absolute top-2 left-2 bg-orange-500 text-white font-black px-2 py-0.5 rounded text-[10px] shadow-sm z-10">
+                                            VENCIDO
                                         </div>
                                     )}
 
@@ -299,6 +311,29 @@ const POS = () => {
                 </div>
 
                 <div className="border-t pt-4 bg-white mt-auto">
+                    <div className="mb-4">
+                        <span className="text-sm font-medium text-gray-600 block mb-2">Método de Pago</span>
+                        <div className="grid grid-cols-3 gap-2">
+                            <button 
+                                onClick={() => setPaymentMethod('efectivo')}
+                                className={`py-2 px-1 text-sm rounded-lg font-medium transition border ${paymentMethod === 'efectivo' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                            >
+                                Efectivo
+                            </button>
+                            <button 
+                                onClick={() => setPaymentMethod('yape')}
+                                className={`py-2 px-1 text-sm rounded-lg font-medium transition border ${paymentMethod === 'yape' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                            >
+                                Yape/Plin
+                            </button>
+                            <button 
+                                onClick={() => setPaymentMethod('tarjeta_credito')}
+                                className={`py-2 px-1 text-sm rounded-lg font-medium transition border ${paymentMethod === 'tarjeta_credito' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                            >
+                                Tarjeta
+                            </button>
+                        </div>
+                    </div>
                     <div className="flex justify-between items-center mb-6">
                         <span className="text-lg font-medium text-gray-600">Total a Pagar</span>
                         <span className="text-3xl font-black text-gray-800">{currencySymbol} {calculateTotal()}</span>
@@ -379,6 +414,29 @@ const POS = () => {
                         </div>
 
                         <div className="border-t p-4 bg-white">
+                            <div className="mb-4">
+                                <span className="text-sm font-medium text-gray-600 block mb-2">Método de Pago</span>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <button 
+                                        onClick={() => setPaymentMethod('efectivo')}
+                                        className={`py-2 px-1 text-xs rounded-lg font-medium transition border ${paymentMethod === 'efectivo' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                                    >
+                                        Efectivo
+                                    </button>
+                                    <button 
+                                        onClick={() => setPaymentMethod('yape')}
+                                        className={`py-2 px-1 text-xs rounded-lg font-medium transition border ${paymentMethod === 'yape' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                                    >
+                                        Yape/Plin
+                                    </button>
+                                    <button 
+                                        onClick={() => setPaymentMethod('tarjeta_credito')}
+                                        className={`py-2 px-1 text-xs rounded-lg font-medium transition border ${paymentMethod === 'tarjeta_credito' ? 'bg-blue-50 text-blue-600 border-blue-400' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                                    >
+                                        Tarjeta
+                                    </button>
+                                </div>
+                            </div>
                             <div className="flex justify-between items-center mb-4">
                                 <span className="font-medium text-gray-600">Total</span>
                                 <span className="text-2xl font-black text-gray-800">{currencySymbol} {calculateTotal()}</span>
@@ -400,6 +458,27 @@ const POS = () => {
                                 </button>
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300">
+                    <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl transform scale-100 flex flex-col items-center text-center animate-[bounce_0.5s_ease-in-out_1]">
+                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                            <svg className="w-10 h-10 text-green-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-gray-800 mb-2">¡Venta Exitosa!</h2>
+                        <p className="text-gray-500 mb-6 font-medium">El pago ha sido procesado correctamente.</p>
+                        <button 
+                            onClick={() => setShowSuccessModal(false)}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition"
+                        >
+                            Imprimir Ticket
+                        </button>
                     </div>
                 </div>
             )}

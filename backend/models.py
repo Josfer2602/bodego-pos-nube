@@ -85,6 +85,7 @@ class Sale(Base):
     id = Column(Integer, primary_key=True, index=True)
     date = Column(DateTime, default=datetime.datetime.utcnow)
     total = Column(Float)
+    payment_method = Column(String, default="efectivo")
     project_id = Column(Integer, ForeignKey("projects.id", ondelete='CASCADE'))
 
     project = relationship("Project", back_populates="sales")

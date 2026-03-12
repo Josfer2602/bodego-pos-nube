@@ -109,6 +109,7 @@ class SaleDetailBase(BaseModel):
 class SaleCreate(BaseModel):
     project_id: int 
     items: List[SaleDetailBase]
+    payment_method: Optional[str] = "efectivo"
 
 class SaleDetailResponse(SaleDetailBase):
     id: int
@@ -119,6 +120,7 @@ class SaleResponse(BaseModel):
     id: int
     date: datetime
     total: float
+    payment_method: Optional[str] = "efectivo"
     project_id: int
     details: List[SaleDetailResponse]
     class Config:

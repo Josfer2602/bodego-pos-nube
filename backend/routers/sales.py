@@ -65,7 +65,7 @@ def create_sale(sale: schemas.SaleCreate, db: Session = Depends(get_db), current
         })
 
     # 2. Guardar cabecera de la venta
-    db_sale = models.Sale(total=total, project_id=sale.project_id)
+    db_sale = models.Sale(total=total, project_id=sale.project_id, payment_method=sale.payment_method)
     db.add(db_sale)
     db.commit()
     db.refresh(db_sale)
