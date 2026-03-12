@@ -55,6 +55,27 @@ const Layout = ({ children }) => {
                 className={`fixed inset-y-0 left-0 z-50 w-64 transform ${open ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:translate-x-0 md:relative md:inset-auto text-white shadow-2xl md:shadow-none flex flex-col h-screen md:h-auto`} 
                 style={{ backgroundColor: themeColor }}
             >
+                <div className="p-6">
+                    <h1 className="text-2xl font-bold mb-2 flex flex-col items-center justify-center text-center">
+                        {/* Renderizar Logo o Texto */}
+                        {projectDetails?.logo_url ? (
+                            <div className="w-24 h-24 mb-3 flex items-center justify-center bg-white/10 backdrop-blur-md rounded-xl p-2 shadow-lg border border-white/20">
+                                <img
+                                    src={projectDetails.logo_url}
+                                    alt="Logo Sucursal"
+                                    className="max-w-full max-h-full object-contain"
+                                    onError={(e) => {
+                                        // Si la imagen falla (404, etc), reemplazamos el div por el ícono por defecto
+                                        e.target.parentElement.outerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart mb-2 text-white"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>';
+                                    }}
+                                />
+                            </div>
+                        ) : (
+                            <ShoppingCart className="w-10 h-10 mb-2 text-white/90" />
+                        )}
+                        <span className="drop-shadow-md">{projectDetails?.name || 'Multi-POS'}</span>
+                    </h1>
+                </div>
 
                 <nav className="flex-1 mt-6">
                     {location.pathname.startsWith('/admin') ? (

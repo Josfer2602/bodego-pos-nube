@@ -55,7 +55,17 @@ export const AuthProvider = ({ children }) => {
             if (p) {
                 // Convertir logo_url relativa a URL completa si existe
                 if (p.logo_url && p.logo_url.startsWith('/uploads/')) {
-                    p.logo_url = `${api.defaults.baseURL}${p.logo_url}`;
+                    // Si api.defaults.baseURL es '/api' (entorno dev con proxy), 
+                    // necesitamos la URL real del backend o usar el origen actual
+                    const baseURL = api.defaults.baseURL;
+                    if (baseURL === '/api' || baseURL.startsWith('/')) {
+                        // Modo desarrollo con proxy Vite
+                        p.logo_url = `http://127.0.0.1:8001${p.logo_url}`;
+                    } else {
+                        // Modo producción o URL completa configurada
+                        const cleanBase = baseURL.endsWith('/api') ? baseURL.slice(0, -4) : baseURL;
+                        p.logo_url = `${cleanBase}${p.logo_url}`;
+                    }
                 }
                 setProjectDetails(p);
             }
