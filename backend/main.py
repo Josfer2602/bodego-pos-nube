@@ -8,15 +8,22 @@ import auth
 from routers import products, sales, auth as auth_router, users, projects, promotions, analytics
 import os
 
+import logging
+
+# Configuración de logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Cargar variables de entorno
 load_dotenv()
 
 # Configuración desde variables de entorno
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
-
-# Asegurar que existe el directorio uploads para los logos
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# Asegurar que incluimos localhost y 127.0.0.1 explícitamente si no están
+DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+ENV_ORIGINS = os.getenv("ALLOWED_ORIGINS", "")
+ALLOWED_ORIGINS = list(set((DEFAULT_ORIGINS + "," + ENV_ORIGINS).strip(",").split(",")))
+logger.info(f"ALLOWED_ORIGINS: {ALLOWED_ORIGINS}")
 
 # Crear las tablas en la base de datos (SQLite)
 models.Base.metadata.create_all(bind=engine)
@@ -57,6 +64,14 @@ app.add_middleware(
 
 # Servimos de forma estática la carpeta donde Pillow redimensiona y guarda las imágenes
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
+# Middleware para logear todas las peticiones (útil para debug)
+@app.middleware("http")
+async def log_requests(request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
 
 # Incluir routers
 app.include_router(auth_router.router)

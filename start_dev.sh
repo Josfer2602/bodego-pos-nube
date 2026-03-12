@@ -1,10 +1,22 @@
 #!/bin/bash
 # Script para iniciar desarrollo local
 # Ejecutar desde la raíz del proyecto
+# Este script está escrito en Bash, por lo que debe correr en un entorno
+# compatible (Git Bash, WSL, Cygwin, etc.). Si lo lanzas desde PowerShell
+# verás errores inesperados.
+
+# comprobación rápida de shell
+if [ -z "$BASH_VERSION" ]; then
+    echo "⚠️  Este script necesita Bash (Git Bash, WSL, etc.)."
+    echo "   Abre Git Bash o WSL, sitúate en la carpeta del proyecto y usa:"
+    echo "       ./start_dev.sh"
+    exit 1
+fi
 
 echo "🚀 Iniciando desarrollo local de POS ERP..."
 
 # Función para verificar si un puerto está en uso
+# (sólo se usa si lsof está presente; en Windows no suele estar)
 check_port() {
     if lsof -Pi :$1 -sTCP:LISTEN -t >/dev/null ; then
         echo "❌ Puerto $1 ya está en uso"
@@ -15,15 +27,20 @@ check_port() {
     fi
 }
 
-# Verificar puertos
+# Verificar puertos (lsof no existe en Windows, así que solo lo intentamos si está disponible)
 echo "Verificando puertos..."
-check_port 8001 || exit 1
-check_port 5173 || exit 1
+if command -v lsof >/dev/null 2>&1; then
+    check_port 8001 || exit 1
+    check_port 5173 || exit 1
+else
+    echo "⚠️  lsof no disponible, omitiendo comprobación de puertos (Windows)."
+fi
 
 # Iniciar backend en background
+# Cambiar a la carpeta backend es necesario para que los imports relativos funcionen
 echo "📡 Iniciando backend..."
 cd backend
-python -m uvicorn main:app --host 127.0.0.1 --port 8001 &
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8001 &
 BACKEND_PID=$!
 cd ..
 

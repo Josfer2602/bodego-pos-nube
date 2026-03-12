@@ -25,41 +25,36 @@ const Layout = ({ children }) => {
     return (
         <div className="min-h-screen flex flex-col md:flex-row bg-gray-100">
             {/* Mobile top bar */}
-            <div className="md:hidden flex items-center justify-between bg-white p-3 shadow">
+            <div className="md:hidden flex items-center justify-between bg-white p-3 shadow-md sticky top-0 z-50">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => setOpen(!open)} className="p-2 rounded hover:bg-gray-100">
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setOpen(!open);
+                        }} 
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        aria-label="Toggle Menu"
+                    >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <div className="text-lg font-bold">{projectDetails?.name || 'Multi-POS'}</div>
+                    <div className="text-lg font-bold text-gray-800">{projectDetails?.name || 'Multi-POS'}</div>
                 </div>
             </div>
-            {/* Sidebar Inyectando Color Dinámico como Style inline */}
-            <div className={`fixed inset-y-0 left-0 z-40 w-64 transform ${open ? 'translate-x-0' : '-translate-x-full'} transition-transform md:translate-x-0 md:relative md:inset-auto text-white shadow-xl flex flex-col`} style={{ backgroundColor: themeColor }}>
-
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold mb-2 flex flex-col items-center justify-center text-center">
-                        {/* Renderizar Logo o Texto */}
-                        {projectDetails?.logo_url ? (
-                            <img
-                                src={projectDetails.logo_url}
-                                alt="Logo Sucursal"
-                                className="w-24 h-24 object-contain bg-white rounded-lg p-1 mb-2 shadow-sm"
-                            />
-                        ) : (
-                            <ShoppingCart className="w-10 h-10 mb-2" />
-                        )}
-                        {projectDetails?.name || 'Multi-POS'}
-                    </h1>
-                </div>
 
             {/* Overlay for mobile when sidebar is open */}
             <div
-                className={`fixed inset-0 bg-black/50 z-30 md:hidden ${open ? 'block' : 'hidden'}`}
+                className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${open ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
                 onClick={() => setOpen(false)}
                 aria-hidden="true"
             />
+
+            {/* Sidebar Inyectando Color Dinámico como Style inline */}
+            <div 
+                className={`fixed inset-y-0 left-0 z-50 w-64 transform ${open ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:translate-x-0 md:relative md:inset-auto text-white shadow-2xl md:shadow-none flex flex-col h-screen md:h-auto`} 
+                style={{ backgroundColor: themeColor }}
+            >
 
                 <nav className="flex-1 mt-6">
                     {location.pathname.startsWith('/admin') ? (

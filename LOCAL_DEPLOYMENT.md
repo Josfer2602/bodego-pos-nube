@@ -140,10 +140,13 @@ cd backend && python -m uvicorn main:app --host 127.0.0.1 --port 8001
 cd frontend && npm run dev
 
 # 3. Verificar que funciona
-# 4. Subir cambios
+# 4. Subir cambios (Opción manual)
 git add .
 git commit -m "Descripción de cambios"
 git push origin master
+
+# 5. Subir cambios (Opción rápida)
+./git_sync.sh "Descripción de cambios"
 ```
 
 ### Solución de Problemas Comunes:
