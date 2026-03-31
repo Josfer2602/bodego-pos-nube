@@ -178,7 +178,7 @@ const POS = () => {
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden">
             {/* Products / Left Panel - Full width on mobile, 2/3 on desktop */}
-            <div className="flex-1 md:flex-[2] flex flex-col h-full bg-white shadow-lg m-4 md:mr-2 rounded-xl border border-gray-100 p-4 md:p-6 overflow-hidden">
+            <div className="flex-1 md:flex-[2] flex flex-col h-full bg-white shadow-lg m-2 xl:m-4 md:mr-2 rounded-xl border border-gray-100 p-3 xl:p-6 overflow-hidden">
                 {/* Mobile cart toggle button */}
                 <div className="md:hidden flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-gray-800">Caja Registradora</h2>
@@ -192,7 +192,7 @@ const POS = () => {
                 </div>
 
                 {/* Desktop header */}
-                <div className="hidden md:flex justify-between items-center mb-6">
+                <div className="hidden md:flex justify-between items-center mb-4 xl:mb-6">
                     <h2 className="text-2xl font-bold text-gray-800">Caja Registradora</h2>
                     <div className="relative w-64">
                         <input
@@ -221,7 +221,7 @@ const POS = () => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 xl:gap-4">
                         {loading && <div className="col-span-full p-8 text-center text-gray-500 font-medium">Cargando inventario...</div>}
                         {!loading && filteredProducts.map((product) => {
                             const pricing = getFinalPrice(product);
@@ -229,7 +229,7 @@ const POS = () => {
                                 <div
                                     key={product.id}
                                     onClick={() => addToCart(product)}
-                                    className={`relative border rounded-lg md:rounded-xl p-3 md:p-4 cursor-pointer flex flex-col transition hover:-translate-y-1 hover:shadow-lg ${product.stock === 0 ? 'opacity-50 grayscale bg-gray-50' : 'bg-white hover:border-blue-300'}`}
+                                    className={`relative border rounded-lg xl:rounded-xl p-2 xl:p-4 cursor-pointer flex flex-col transition hover:-translate-y-1 hover:shadow-lg ${product.stock === 0 ? 'opacity-50 grayscale bg-gray-50' : 'bg-white hover:border-blue-300'}`}
                                 >
                                     {pricing.hasDiscount && (
                                         <div className="absolute top-2 right-2 bg-red-500 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow-sm flex items-center gap-1 z-10">
@@ -237,12 +237,12 @@ const POS = () => {
                                         </div>
                                     )}
                                     {isProductExpired(product) && (
-                                        <div className="absolute top-2 left-2 bg-orange-500 text-white font-black px-2 py-0.5 rounded text-[10px] shadow-sm z-10">
+                                        <div className="absolute -top-1 -left-1 bg-orange-600 text-white font-black px-1.5 py-0.5 rounded shadow-sm z-10 text-[9px]">
                                             VENCIDO
                                         </div>
                                     )}
 
-                                    <h3 className="font-bold text-gray-800 text-lg mb-1 leading-tight flex-1 pr-6">{product.name}</h3>
+                                    <h3 className="font-bold text-gray-800 text-sm xl:text-lg mb-1 leading-tight flex-1 pr-6">{product.name}</h3>
 
                                     <div className="mt-2 flex flex-col justify-end">
                                         {pricing.hasDiscount && (
@@ -250,7 +250,7 @@ const POS = () => {
                                                 {currencySymbol} {pricing.original.toFixed(2)}
                                             </span>
                                         )}
-                                        <span className="text-green-600 font-black text-xl leading-none">{currencySymbol} {pricing.current.toFixed(2)}</span>
+                                        <span className="text-green-600 font-black text-lg xl:text-xl leading-none">{currencySymbol} {pricing.current.toFixed(2)}</span>
                                     </div>
 
                                     <div className="mt-3 flex justify-between items-center text-xs text-gray-500">
@@ -269,7 +269,7 @@ const POS = () => {
             </div>
 
             {/* Cart / Right Panel - Hidden on mobile, shown as modal */}
-            <div className="hidden md:block w-1/3 min-w-[320px] bg-white m-4 ml-0 rounded-xl shadow-lg border border-gray-100 flex flex-col p-6 overflow-hidden">
+            <div className="hidden md:block w-1/3 min-w-[280px] xl:min-w-[320px] bg-white m-2 xl:m-4 ml-0 rounded-xl shadow-lg border border-gray-100 flex flex-col p-3 xl:p-6 overflow-hidden">
                 <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-4 flex items-center gap-2">
                     <ShoppingCart className="text-blue-600 w-6 h-6" /> Ticket de Venta
                 </h2>
@@ -346,7 +346,7 @@ const POS = () => {
                         <button
                             onClick={handleCheckout}
                             disabled={cart.length === 0}
-                            className={`w-full py-4 text-white text-lg font-bold rounded-xl flex items-center justify-center gap-2 transition ${cart.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 shadow-lg'}`}
+                            className={`w-full py-3 xl:py-4 text-white text-base xl:text-lg font-bold rounded-xl flex items-center justify-center gap-2 transition ${cart.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 shadow-lg'}`}
                         >
                             <CreditCard className="w-6 h-6" /> Realizar Venta
                         </button>

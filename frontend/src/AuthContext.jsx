@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
                     const baseURL = api.defaults.baseURL;
                     if (baseURL === '/api' || baseURL.startsWith('/')) {
                         // Modo desarrollo con proxy Vite
-                        p.logo_url = `http://127.0.0.1:8001${p.logo_url}`;
+                        p.logo_url = `http://127.0.0.1:8000${p.logo_url}`;
                     } else {
                         // Modo producción o URL completa configurada
                         const cleanBase = baseURL.endsWith('/api') ? baseURL.slice(0, -4) : baseURL;
