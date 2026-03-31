@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List
 import models, schemas, auth
@@ -84,30 +85,20 @@ def delete_project(project_id: int, db: Session = Depends(get_db), current_user:
             except Exception as e:
                 print(f"Error borrando archivo de logo: {e}")
 
-        # 2. Limpieza manual de relaciones para evitar errores de Foreign Key en SQLite
-        # (Especialmente util si las tablas no se pueden migrar para añadir ondelete='CASCADE')
+        # 2. Limpieza robusta vía SQL directo (evita StaleDataError de SQLAlchemy en SQLite)
+        # Esto asegura que se borren todas las dependencias sin conflictos de sincronización de la sesión
+        params = {"pid": project_id}
         
-        # Primero quitamos los usuarios (tabla intermedia user_project)
-        project.users = []
-        db.flush()
-
-        # Borramos ventas (esto borrará sale_details por el cascade definido en modelos si SQLAlchemy lo detecta, 
-        # sino lo hacemos manual)
-        for sale in project.sales:
-            db.delete(sale)
+        # Secuencia de limpieza profunda respetando claves foráneas
+        db.execute(text("DELETE FROM user_project WHERE project_id = :pid"), params)
+        db.execute(text("DELETE FROM sale_details WHERE sale_id IN (SELECT id FROM sales WHERE project_id = :pid)"), params)
+        db.execute(text("DELETE FROM sales WHERE project_id = :pid"), params)
+        db.execute(text("DELETE FROM promotion_product WHERE promotion_id IN (SELECT id FROM promotions WHERE project_id = :pid) OR product_id IN (SELECT id FROM products WHERE project_id = :pid)"), params)
+        db.execute(text("DELETE FROM promotions WHERE project_id = :pid"), params)
+        db.execute(text("DELETE FROM barcodes WHERE product_id IN (SELECT id FROM products WHERE project_id = :pid)"), params)
+        db.execute(text("DELETE FROM products WHERE project_id = :pid"), params)
+        db.execute(text("DELETE FROM projects WHERE id = :pid"), params)
         
-        # Borramos promociones
-        for promo in project.promotions:
-            db.delete(promo)
-
-        # Borramos productos (esto borrará sale_details vinculados al producto)
-        for product in project.products:
-            db.delete(product)
-        
-        db.flush()
-
-        # Finalmente borramos el proyecto
-        db.delete(project)
         db.commit()
         return {"message": "Sucursal eliminada exitosamente"}
     except Exception as e:
