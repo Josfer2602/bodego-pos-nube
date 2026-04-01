@@ -178,7 +178,7 @@ const POS = () => {
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden">
             {/* Products / Left Panel - Full width on mobile, 2/3 on desktop */}
-            <div className="flex-1 md:flex-[2] flex flex-col h-full bg-white shadow-lg m-2 xl:m-4 md:mr-2 rounded-xl border border-gray-100 p-3 xl:p-6 overflow-hidden">
+            <div className="flex-1 md:flex-[2] flex flex-col bg-white shadow-lg my-2 mx-2 xl:my-4 xl:mx-4 rounded-xl border border-gray-100 p-3 xl:p-6 overflow-hidden h-[calc(100vh-1rem)] xl:h-[calc(100vh-2rem)]">
                 {/* Mobile cart toggle button */}
                 <div className="md:hidden flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-gray-800">Caja Registradora</h2>
@@ -269,7 +269,7 @@ const POS = () => {
             </div>
 
             {/* Cart / Right Panel - Hidden on mobile, shown as modal */}
-            <div className="hidden md:block w-1/3 min-w-[280px] xl:min-w-[320px] bg-white m-2 xl:m-4 ml-0 rounded-xl shadow-lg border border-gray-100 flex flex-col p-3 xl:p-6 overflow-hidden">
+            <div className="hidden md:flex w-1/3 min-w-[300px] xl:min-w-[350px] bg-white my-2 mr-2 xl:my-4 xl:mr-4 rounded-xl shadow-lg border border-gray-100 flex-col p-3 xl:p-6 overflow-hidden h-[calc(100vh-1rem)] xl:h-[calc(100vh-2rem)]">
                 <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-4 flex items-center gap-2">
                     <ShoppingCart className="text-blue-600 w-6 h-6" /> Ticket de Venta
                 </h2>
@@ -310,7 +310,7 @@ const POS = () => {
                     )}
                 </div>
 
-                <div className="border-t pt-4 bg-white mt-auto">
+                <div className="border-t pt-4 bg-white">
                     <div className="mb-4">
                         <span className="text-sm font-medium text-gray-600 block mb-2">Método de Pago</span>
                         <div className="grid grid-cols-3 gap-2">

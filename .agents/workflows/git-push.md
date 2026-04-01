@@ -23,5 +23,5 @@ git -C c:\Users\josen\respaldo_app_ventas_20260309_234304 commit -m "feat: actua
 
 4. Subir los cambios al repositorio remoto (rama actual):
 ```powershell
-git -C c:\Users\josen\respaldo_app_ventas_20260309_234304 push
+git -C c:\Users\josen\respaldo_app_ventas_20260309_234304 push --set-upstream origin master
 ```
