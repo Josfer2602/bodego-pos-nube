@@ -5,7 +5,7 @@ from database import engine, Base, SessionLocal
 from dotenv import load_dotenv
 import models
 import auth
-from routers import products, sales, auth as auth_router, users, projects, promotions, analytics
+from routers import products, sales, auth as auth_router, users, projects, promotions, analytics, cash
 import os
 
 import logging
@@ -81,6 +81,7 @@ app.include_router(products.router)
 app.include_router(sales.router)
 app.include_router(promotions.router)
 app.include_router(analytics.router)
+app.include_router(cash.router)
 
 @app.get("/")
 def read_root():

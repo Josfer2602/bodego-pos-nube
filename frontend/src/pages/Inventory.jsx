@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../api';
 import { useAuth } from '../AuthContext';
-import { Plus, Edit2, Trash2, Package, Upload, Barcode, PencilLine, Search, CheckCircle2, X, PlusCircle, ArrowUpDown, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Package, Upload, Barcode, PencilLine, Search, CheckCircle2, X, PlusCircle, ArrowUpDown, ChevronUp, ChevronDown, Loader2, Save } from 'lucide-react';
 
 const Inventory = () => {
     const { activeProject, projectDetails } = useAuth();
@@ -20,6 +20,11 @@ const Inventory = () => {
     const [barcodeInput, setBarcodeInput] = useState('');
     const [barcodeStatus, setBarcodeStatus] = useState(null); // null | 'found' | 'not_found' | 'loading'
     const [newBarcodeCode, setNewBarcodeCode] = useState(''); // for adding barcode to existing product
+    const [newBarcodeStock, setNewBarcodeStock] = useState('');
+    const [newBarcodeDate, setNewBarcodeDate] = useState('');
+    const [expandedProducts, setExpandedProducts] = useState({});
+    const [editingBarcodeId, setEditingBarcodeId] = useState(null);
+    const [editBarcodeData, setEditBarcodeData] = useState({ stock: 0, expiration_date: '' });
     const [showSuccess, setShowSuccess] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -29,7 +34,8 @@ const Inventory = () => {
         margin: '',
         price: '',
         stock: '',
-        expiration_date: ''
+        expiration_date: '',
+        barcode: ''
     });
 
     const currencySymbol = projectDetails?.currency === 'USD' ? '$' : projectDetails?.currency === 'EUR' ? '€' : 'S/';
@@ -120,7 +126,7 @@ const Inventory = () => {
         } catch (error) {
             if (error.response?.status === 404) {
                 // New product — clear form, keep barcode for later association
-                setFormData({ name: '', cost: '', margin: '', price: '', stock: '', expiration_date: '' });
+                setFormData({ name: '', cost: '', margin: '', price: '', stock: '', expiration_date: '', barcode: '' });
                 setEditingId(null);
                 setBarcodeStatus('not_found');
             } else {
@@ -143,26 +149,26 @@ const Inventory = () => {
         };
 
         try {
+            if (!editingId) {
+                let finalBarcode = '';
+                if (inputMode === 'barcode') {
+                    finalBarcode = barcodeInput.trim();
+                } else {
+                    finalBarcode = formData.barcode.trim();
+                }
+                
+                if (!finalBarcode) {
+                    alert("Es obligatorio ingresar o autogenerar un código para crear el producto.");
+                    return;
+                }
+                payload.barcode = finalBarcode;
+            }
+
             setIsSaving(true);
-            let savedProductId = editingId;
             if (editingId) {
                 await api.put(`/products/${editingId}`, payload);
             } else {
-                const resp = await api.post('/products/', payload);
-                savedProductId = resp.data.id;
-                console.log("Producto creado exitosamente:", resp.data);
-            }
-
-            // If barcode mode and a code was entered, associate it
-            if (inputMode === 'barcode' && barcodeInput.trim() && barcodeStatus === 'not_found') {
-                try {
-                    await api.post(`/products/${savedProductId}/barcodes`, {
-                        code: barcodeInput.trim(),
-                        product_id: savedProductId
-                    });
-                } catch (bcErr) {
-                    console.warn('Barcode association warning:', bcErr.response?.data?.detail);
-                }
+                await api.post('/products/', payload);
             }
 
             setShowSuccess(true);
@@ -183,14 +189,46 @@ const Inventory = () => {
         try {
             await api.post(`/products/${productId}/barcodes`, {
                 code: newBarcodeCode.trim(),
-                product_id: productId
+                product_id: productId,
+                stock: parseInt(newBarcodeStock) || 0,
+                expiration_date: newBarcodeDate || null
             });
             alert('Código de barras agregado correctamente.');
             setNewBarcodeCode('');
+            setNewBarcodeStock('');
+            setNewBarcodeDate('');
             fetchProducts();
         } catch (error) {
             alert(error.response?.data?.detail || 'Error al agregar barcode');
         }
+    };
+
+    const handleUpdateBarcode = async (barcodeId) => {
+        try {
+            await api.put(`/products/barcodes/${barcodeId}`, {
+                stock: parseInt(editBarcodeData.stock) || 0,
+                expiration_date: editBarcodeData.expiration_date || null
+            });
+            alert('Lote actualizado');
+            setEditingBarcodeId(null);
+            fetchProducts();
+        } catch (error) {
+            alert(error.response?.data?.detail || 'Error actualizando lote');
+        }
+    };
+
+    const handleDeleteBarcode = async (barcodeId) => {
+        if (!window.confirm('¿Eliminar este código de barras?')) return;
+        try {
+            await api.delete(`/products/barcodes/${barcodeId}`);
+            fetchProducts();
+        } catch (error) {
+            alert(error.response?.data?.detail || 'Error eliminando lote');
+        }
+    };
+    
+    const toggleExpand = (productId) => {
+        setExpandedProducts(prev => ({ ...prev, [productId]: !prev[productId] }));
     };
 
     const handleEdit = (product) => {
@@ -200,7 +238,8 @@ const Inventory = () => {
             margin: product.margin,
             price: product.price,
             stock: product.stock,
-            expiration_date: product.expiration_date || ''
+            expiration_date: product.expiration_date || '',
+            barcode: '' // Edited products don't change main barcode this way
         });
         setEditingId(product.id);
         setInputMode('manual');
@@ -226,7 +265,14 @@ const Inventory = () => {
         setBarcodeInput('');
         setBarcodeStatus(null);
         setNewBarcodeCode('');
-        setFormData({ name: '', cost: '', margin: '', price: '', stock: '', expiration_date: '' });
+        setNewBarcodeStock('');
+        setNewBarcodeDate('');
+        setFormData({ name: '', cost: '', margin: '', price: '', stock: '', expiration_date: '', barcode: '' });
+    };
+
+    const handleGenerateInternalCode = () => {
+        const sysCode = 'SYS-' + Math.floor(100000 + Math.random() * 900000);
+        setFormData({ ...formData, barcode: sysCode });
     };
 
     const getExpirationStatus = (expDate) => {
@@ -331,7 +377,8 @@ const Inventory = () => {
                         {sortedProducts.map(product => {
                             const expStatus = getExpirationStatus(product.expiration_date);
                             return (
-                                <tr key={product.id} className="border-b hover:bg-gray-50 transition">
+                                <React.Fragment key={product.id}>
+                                <tr className="border-b hover:bg-gray-50 transition">
                                     <td className="p-4 flex items-center gap-3">
                                         <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
                                             <Package className="w-5 h-5" />
@@ -339,10 +386,11 @@ const Inventory = () => {
                                         <span className="font-medium text-gray-800">{product.name}</span>
                                     </td>
                                     <td className="p-4">
-                                        <div className="flex flex-wrap gap-1">
-                                            {product.barcodes?.length > 0 ? product.barcodes.map(bc => (
-                                                <span key={bc.id} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono">{bc.code}</span>
-                                            )) : <span className="text-xs text-gray-400">—</span>}
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => toggleExpand(product.id)} className="p-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-full transition flex items-center justify-center">
+                                                <Plus className={`w-4 h-4 transition-transform ${expandedProducts[product.id] ? 'rotate-45' : ''}`} />
+                                            </button>
+                                            <span className="text-sm text-gray-600 font-medium">{product.barcodes?.length || 0} Lotes</span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-gray-600">{currencySymbol} {product.cost.toFixed(2)}</td>
@@ -361,6 +409,65 @@ const Inventory = () => {
                                         </div>
                                     </td>
                                 </tr>
+                                {expandedProducts[product.id] && product.barcodes?.length > 0 && (
+                                    <tr className="bg-gray-50/50 border-b border-gray-100">
+                                        <td colSpan="8" className="p-0">
+                                            <div className="bg-blue-50/30 p-4 border-l-4 border-blue-500">
+                                                <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                                                    <Barcode className="w-4 h-4" /> Desglose de Lotes
+                                                </h4>
+                                                <table className="w-full text-sm text-left max-w-3xl bg-white shadow-sm rounded-lg overflow-hidden border">
+                                                    <thead className="bg-gray-50">
+                                                        <tr>
+                                                            <th className="px-4 py-2 font-semibold text-gray-600">Código</th>
+                                                            <th className="px-4 py-2 font-semibold text-gray-600">Stock Individual</th>
+                                                            <th className="px-4 py-2 font-semibold text-gray-600">Vencimiento</th>
+                                                            <th className="px-4 py-2 font-semibold text-gray-600 text-center">Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {product.barcodes.map(bc => {
+                                                            const isEditing = editingBarcodeId === bc.id;
+                                                            return (
+                                                                <tr key={bc.id} className="hover:bg-gray-50">
+                                                                    <td className="px-4 py-2 font-mono text-gray-700">{bc.code}</td>
+                                                                    <td className="px-4 py-2">
+                                                                        {isEditing ? (
+                                                                            <input type="number" className="border w-20 p-1 rounded" value={editBarcodeData.stock} onChange={e => setEditBarcodeData({...editBarcodeData, stock: e.target.value})} />
+                                                                        ) : (
+                                                                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">{bc.stock}</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-4 py-2">
+                                                                        {isEditing ? (
+                                                                            <input type="date" className="border p-1 rounded" value={editBarcodeData.expiration_date} onChange={e => setEditBarcodeData({...editBarcodeData, expiration_date: e.target.value})} />
+                                                                        ) : (
+                                                                            <span className={getExpirationStatus(bc.expiration_date).class}>{getExpirationStatus(bc.expiration_date).text}</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-4 py-2 text-center flex justify-center gap-2">
+                                                                        {isEditing ? (
+                                                                            <>
+                                                                                <button onClick={() => handleUpdateBarcode(bc.id)} className="text-green-600 p-1 hover:bg-green-50 rounded"><Save className="w-4 h-4"/></button>
+                                                                                <button onClick={() => setEditingBarcodeId(null)} className="text-gray-500 p-1 hover:bg-gray-100 rounded"><X className="w-4 h-4"/></button>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <button onClick={() => { setEditingBarcodeId(bc.id); setEditBarcodeData({ stock: bc.stock, expiration_date: bc.expiration_date || '' }); }} className="text-blue-600 p-1 hover:bg-blue-50 rounded"><Edit2 className="w-4 h-4"/></button>
+                                                                                <button onClick={() => handleDeleteBarcode(bc.id)} className="text-red-600 p-1 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4"/></button>
+                                                                            </>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                                </React.Fragment>
                             );
                         })}
                         {products.length === 0 && !loading && (
@@ -505,6 +612,17 @@ const Inventory = () => {
                         {/* Product Form */}
                         {(inputMode === 'manual' || barcodeStatus !== null) && (
                             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                                {inputMode === 'manual' && !editingId && (
+                                    <div className="flex gap-2 items-end">
+                                        <div className="flex-1">
+                                            <label className="text-sm font-medium text-gray-700 block mb-1">Código Interno / Barcode <span className="text-red-500">*</span></label>
+                                            <input type="text" name="barcode" value={formData.barcode} onChange={handleFormChange} required className="w-full border p-2 rounded focus:ring-2 outline-none font-mono bg-blue-50" placeholder="Ej: SYS-102930" />
+                                        </div>
+                                        <button type="button" onClick={handleGenerateInternalCode} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium text-sm transition-colors mb-[1px]">
+                                            Auto-Generar
+                                        </button>
+                                    </div>
+                                )}
                                 <div><label className="text-sm font-medium text-gray-700 block mb-1">Nombre</label>
                                     <input name="name" required className="w-full border p-2 rounded focus:ring-2 outline-none" value={formData.name} onChange={handleFormChange} /></div>
 
@@ -527,13 +645,32 @@ const Inventory = () => {
 
                                 {/* Extra barcode field when editing — add additional codes */}
                                 {editingId && (
-                                    <div>
-                                        <label className="text-sm font-medium text-gray-700 block mb-1">Agregar otro código de barras</label>
-                                        <div className="flex gap-2">
+                                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+                                        <label className="text-sm font-bold text-gray-700 block mb-2 flex items-center gap-2">
+                                            <Barcode className="w-4 h-4 text-blue-600" />
+                                            Agregar Nuevo Lote / Código
+                                        </label>
+                                        <div className="flex flex-col gap-3">
                                             <input value={newBarcodeCode} onChange={e => setNewBarcodeCode(e.target.value)}
-                                                placeholder="Nuevo código..." className="flex-1 border p-2 rounded font-mono focus:ring-2 outline-none" />
-                                            <button type="button" onClick={() => handleAddBarcodeToExisting(editingId)}
-                                                className="bg-gray-700 text-white px-3 rounded hover:bg-gray-900 transition text-sm">Agregar</button>
+                                                placeholder="Escanear o escribir código..." className="w-full border p-2 rounded font-mono focus:ring-2 outline-none" />
+                                            <div className="flex gap-2">
+                                                <div className="flex-1">
+                                                    <label className="text-xs font-semibold text-gray-500">Stock</label>
+                                                    <input type="number" min="0" value={newBarcodeStock} onChange={e => setNewBarcodeStock(e.target.value)}
+                                                        placeholder="0" className="w-full border p-2 rounded focus:ring-2 outline-none" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="text-xs font-semibold text-gray-500">Vencimiento</label>
+                                                    <input type="date" value={newBarcodeDate} onChange={e => setNewBarcodeDate(e.target.value)}
+                                                        className="w-full border p-2 rounded focus:ring-2 outline-none" />
+                                                </div>
+                                                <div className="flex items-end">
+                                                    <button type="button" onClick={() => handleAddBarcodeToExisting(editingId)}
+                                                        className="bg-green-600 text-white h-[42px] px-4 rounded hover:bg-green-700 transition text-sm font-bold shadow-sm whitespace-nowrap">
+                                                        + Agregar Lote
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

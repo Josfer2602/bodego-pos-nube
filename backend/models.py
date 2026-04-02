@@ -60,10 +60,40 @@ class Product(Base):
     promotions = relationship("Promotion", secondary=promotion_product, back_populates="products")
     barcodes = relationship("Barcode", back_populates="product", cascade="all, delete-orphan", passive_deletes=True)
 
+class CashSession(Base):
+    __tablename__ = "cash_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    status = Column(String, default="open")  # open / closed
+    
+    opened_at = Column(DateTime, default=datetime.datetime.utcnow)
+    closed_at = Column(DateTime, nullable=True)
+    
+    initial_cash = Column(Float, default=0.0)
+    
+    expected_cash = Column(Float, default=0.0)
+    actual_cash = Column(Float, nullable=True)
+    
+    expected_card = Column(Float, default=0.0)
+    actual_card = Column(Float, nullable=True)
+    
+    expected_transfer = Column(Float, default=0.0)
+    actual_transfer = Column(Float, nullable=True)
+    
+    difference = Column(Float, nullable=True) # Total actual - Total expected
+    
+    project = relationship("Project")
+    user = relationship("User")
+    sales = relationship("Sale", back_populates="session")
+
 class Barcode(Base):
     __tablename__ = "barcodes"
     id = Column(Integer, primary_key=True, index=True)
     code = Column(String, unique=True, index=True)
+    stock = Column(Integer, default=0)
+    expiration_date = Column(Date, nullable=True)
     product_id = Column(Integer, ForeignKey("products.id", ondelete='CASCADE'))
     product = relationship("Product", back_populates="barcodes")
 
@@ -87,8 +117,10 @@ class Sale(Base):
     total = Column(Float)
     payment_method = Column(String, default="efectivo")
     project_id = Column(Integer, ForeignKey("projects.id", ondelete='CASCADE'))
+    session_id = Column(Integer, ForeignKey("cash_sessions.id", ondelete='SET NULL'), nullable=True)
 
     project = relationship("Project", back_populates="sales")
+    session = relationship("CashSession", back_populates="sales")
     details = relationship("SaleDetail", back_populates="sale", cascade="all, delete-orphan", passive_deletes=True)
 
 class SaleDetail(Base):

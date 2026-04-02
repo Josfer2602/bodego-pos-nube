@@ -9,6 +9,7 @@ import ProjectSelector from './pages/ProjectSelector';
 import AdminPanel from './pages/AdminPanel';
 import Dashboard from './pages/Dashboard';
 import Promotions from './pages/Promotions'; // NUEVA RUTA
+import CashHistory from './pages/CashHistory';
 import { AuthProvider, useAuth } from './AuthContext';
 
 // ... (Resto de ProtectedRoute igual)
@@ -42,6 +43,7 @@ function App() {
           <Route path="/inventory" element={<ProtectedRoute><Layout><Inventory /></Layout></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><Layout><History /></Layout></ProtectedRoute>} />
           <Route path="/promotions" element={<ProtectedRoute><Layout><Promotions /></Layout></ProtectedRoute>} />
+          <Route path="/cash-history" element={<ProtectedRoute requireRole="admin"><Layout><CashHistory /></Layout></ProtectedRoute>} />
 
           <Route path="/admin" element={
             <ProtectedRoute requireRole="admin"><Layout><AdminPanel /></Layout></ProtectedRoute>

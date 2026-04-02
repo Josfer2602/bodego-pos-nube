@@ -50,10 +50,25 @@ def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)
     if project.status != "active" and current_user.role != "superadmin":
         raise HTTPException(status_code=403, detail="La sucursal está suspendida para nuevos registros")
         
-    db_product = models.Product(**product.dict())
+    product_data = product.dict()
+    barcode_str = product_data.pop("barcode") # Quitarlo para instanciar Product correctly
+    
+    db_product = models.Product(**product_data)
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
+    
+    # Create the initial barcode
+    db_barcode = models.Barcode(
+        code=barcode_str,
+        product_id=db_product.id,
+        stock=db_product.stock,
+        expiration_date=db_product.expiration_date
+    )
+    db.add(db_barcode)
+    db.commit()
+    db.refresh(db_product)
+    
     return db_product
 
 @router.put("/{product_id}", response_model=schemas.ProductResponse)
@@ -69,7 +84,10 @@ def update_product(product_id: int, product: schemas.ProductCreate, db: Session 
     if db_product is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
-    for key, value in product.dict().items():
+    product_data = product.dict()
+    product_data.pop("barcode", None)
+    
+    for key, value in product_data.items():
         setattr(db_product, key, value)
         
     db.commit()
@@ -117,11 +135,57 @@ def add_barcode_to_product(product_id: int, barcode_in: schemas.BarcodeCreate, d
     existing = db.query(models.Barcode).filter(models.Barcode.code == barcode_in.code).first()
     if existing:
         raise HTTPException(status_code=409, detail="Este código ya está registrado")
-    new_barcode = models.Barcode(code=barcode_in.code, product_id=product_id)
+    new_barcode = models.Barcode(
+        code=barcode_in.code, 
+        product_id=product_id,
+        stock=barcode_in.stock,
+        expiration_date=barcode_in.expiration_date
+    )
+    product.stock += (barcode_in.stock or 0)
     db.add(new_barcode)
     db.commit()
     db.refresh(new_barcode)
     return new_barcode
+
+@router.put("/barcodes/{barcode_id}", response_model=schemas.BarcodeResponse)
+def update_barcode(barcode_id: int, barcode_in: schemas.BarcodeUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    barcode = db.query(models.Barcode).filter(models.Barcode.id == barcode_id).first()
+    if not barcode:
+        raise HTTPException(status_code=404, detail="Código de barras no encontrado")
+    product = barcode.product
+    project = product.project
+    if current_user.role != "superadmin" and project not in current_user.projects:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    # Adjust product stock if barcode stock changes
+    if barcode_in.stock is not None:
+        stock_diff = barcode_in.stock - barcode.stock
+        product.stock += stock_diff
+        barcode.stock = barcode_in.stock
+        
+    if barcode_in.expiration_date is not None:
+        barcode.expiration_date = barcode_in.expiration_date
+        
+    db.commit()
+    db.refresh(barcode)
+    return barcode
+
+@router.delete("/barcodes/{barcode_id}")
+def delete_barcode(barcode_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    barcode = db.query(models.Barcode).filter(models.Barcode.id == barcode_id).first()
+    if not barcode:
+        raise HTTPException(status_code=404, detail="Código de barras no encontrado")
+    product = barcode.product
+    project = product.project
+    if current_user.role != "superadmin" and project not in current_user.projects:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+        
+    # Subtract barcode stock from product total
+    product.stock -= barcode.stock
+    
+    db.delete(barcode)
+    db.commit()
+    return {"message": "Código de barras eliminado exitosamente"}
 
 @router.post("/bulk-upload", response_model=dict)
 async def bulk_upload_products(project_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
@@ -140,7 +204,7 @@ async def bulk_upload_products(project_id: int, file: UploadFile = File(...), db
         df = pd.read_excel(io.BytesIO(contents))
         
         # Validar columnas requeridas
-        required_columns = ['name', 'cost', 'margin', 'price', 'stock']
+        required_columns = ['name', 'cost', 'margin', 'price', 'stock', 'barcode']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
              raise HTTPException(status_code=400, detail=f"Faltan columnas requeridas: {', '.join(missing_columns)}")
@@ -178,6 +242,7 @@ async def bulk_upload_products(project_id: int, file: UploadFile = File(...), db
                  existing_product.expiration_date = exp_date
                  updated_count += 1
             else:
+                 barcode_val = str(row['barcode']).strip()
                  new_product = models.Product(
                      name=name,
                      cost=cost,
@@ -188,6 +253,15 @@ async def bulk_upload_products(project_id: int, file: UploadFile = File(...), db
                      project_id=project_id
                  )
                  db.add(new_product)
+                 db.flush() # Para obtener el ID del producto
+                 
+                 db_barcode = models.Barcode(
+                     code=barcode_val,
+                     stock=stock,
+                     expiration_date=exp_date,
+                     product_id=new_product.id
+                 )
+                 db.add(db_barcode)
                  added_count += 1
                  
         db.commit()

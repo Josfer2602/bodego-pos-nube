@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Package, Clock, Shield, LogOut, ArrowLeftRight, Tag, BarChart2 } from 'lucide-react';
+import { ShoppingCart, Package, Clock, Shield, LogOut, ArrowLeftRight, Tag, BarChart2, Wallet } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 const Layout = ({ children }) => {
@@ -100,6 +100,11 @@ const Layout = ({ children }) => {
                             <Link title="Historial" to="/history" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition ${location.pathname === '/history' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
                                 <Clock className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Historial</span>
                             </Link>
+                            {(user?.role === 'superadmin' || user?.role === 'admin') && (
+                                <Link title="Auditoría Cajas" to="/cash-history" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition ${location.pathname === '/cash-history' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                                    <Wallet className="w-5 h-5 xl:mr-3 text-red-300" /> <span className="hidden xl:block text-red-200">Auditoría Cajas</span>
+                                </Link>
+                            )}
                         </>
                     )}
 

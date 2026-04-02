@@ -30,6 +30,14 @@ def create_sale(sale: schemas.SaleCreate, db: Session = Depends(get_db), current
 
     if project.status != "active" and current_user.role != "superadmin":
         raise HTTPException(status_code=403, detail="La sucursal se encuentra suspendida para ventas.")
+        
+    session = db.query(models.CashSession).filter(
+        models.CashSession.project_id == project.id,
+        models.CashSession.status == "open"
+    ).first()
+    
+    if not session:
+        raise HTTPException(status_code=400, detail="Debe haber un turno de caja abierto para registrar ventas.")
 
     today = date.today()
 
@@ -61,11 +69,12 @@ def create_sale(sale: schemas.SaleCreate, db: Session = Depends(get_db), current
         processed_items.append({
             "product": product,
             "quantity": item.quantity,
-            "sold_price": final_price
+            "sold_price": final_price,
+            "barcode_id": getattr(item, 'barcode_id', None)
         })
 
     # 2. Guardar cabecera de la venta
-    db_sale = models.Sale(total=total, project_id=sale.project_id, payment_method=sale.payment_method)
+    db_sale = models.Sale(total=total, project_id=sale.project_id, payment_method=sale.payment_method, session_id=session.id)
     db.add(db_sale)
     db.commit()
     db.refresh(db_sale)
@@ -73,12 +82,37 @@ def create_sale(sale: schemas.SaleCreate, db: Session = Depends(get_db), current
     # 3. Guardar detalles
     for processed in processed_items:
         prod = processed["product"]
-        prod.stock -= processed["quantity"]
+        qty = processed["quantity"]
+        b_id = processed["barcode_id"]
+        
+        prod.stock -= qty
+        
+        if b_id:
+            barcode = db.query(models.Barcode).filter(models.Barcode.id == b_id).first()
+            if barcode:
+                barcode.stock = max(0, barcode.stock - qty)
+        else:
+            # FIFO: descontar del lote que vence primero
+            barcodes = db.query(models.Barcode).filter(
+                models.Barcode.product_id == prod.id,
+                models.Barcode.stock > 0
+            ).order_by(
+                models.Barcode.expiration_date.is_(None),
+                models.Barcode.expiration_date.asc()
+            ).all()
+            
+            rem_qty = qty
+            for bc in barcodes:
+                if rem_qty <= 0:
+                    break
+                deduct = min(bc.stock, rem_qty)
+                bc.stock -= deduct
+                rem_qty -= deduct
         
         db_sale_detail = models.SaleDetail(
             sale_id=db_sale.id,
             product_id=prod.id,
-            quantity=processed["quantity"],
+            quantity=qty,
             price=processed["sold_price"]
         )
         db.add(db_sale_detail)

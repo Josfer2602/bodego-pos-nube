@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { useAuth } from '../AuthContext';
-import { ShoppingCart, Search, Plus, Minus, Trash2, CreditCard, Tag, X } from 'lucide-react';
+import { ShoppingCart, Search, Plus, Minus, Trash2, CreditCard, Tag, X, Lock, Unlock, DollarSign, Wallet } from 'lucide-react';
 
 const POS = () => {
     const { activeProject, projectDetails, user } = useAuth();
@@ -14,14 +14,81 @@ const POS = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('efectivo'); // 'efectivo', 'yape', 'tarjeta_credito'
 
+    // Cash Session States
+    const [cashSession, setCashSession] = useState(null);
+    const [showOpenSessionModal, setShowOpenSessionModal] = useState(false);
+    const [showCloseSessionModal, setShowCloseSessionModal] = useState(false);
+    const [initialCash, setInitialCash] = useState('');
+    const [sessionSummary, setSessionSummary] = useState(null);
+    const [actuals, setActuals] = useState({ efectivo: '', tarjeta: '', transferencia: '' });
+
     const currencySymbol = projectDetails?.currency === 'USD' ? '$' : projectDetails?.currency === 'EUR' ? '€' : 'S/';
 
     useEffect(() => {
         if (activeProject) {
             fetchProducts();
             fetchPromotions();
+            fetchCurrentSession();
         }
     }, [activeProject]);
+
+    const fetchCurrentSession = async () => {
+        try {
+            const resp = await api.get(`/cash/current?project_id=${activeProject}`);
+            setCashSession(resp.data);
+            setShowOpenSessionModal(false);
+        } catch (error) {
+            if (error.response?.status === 404) {
+                setCashSession(null);
+                setShowOpenSessionModal(true); // Exigir apertura
+            }
+        }
+    };
+
+    const handleOpenSession = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/cash/open', {
+                project_id: activeProject,
+                initial_cash: parseFloat(initialCash) || 0
+            });
+            fetchCurrentSession();
+        } catch (error) {
+            alert(error.response?.data?.detail || "Error al abrir la caja");
+        }
+    };
+
+    const fetchSessionSummary = async () => {
+        try {
+            const resp = await api.get(`/cash/${cashSession.id}/summary`);
+            setSessionSummary(resp.data);
+            setActuals({
+                efectivo: resp.data.expected_cash,
+                tarjeta: resp.data.expected_card,
+                transferencia: resp.data.expected_transfer
+            }); // Autocompletar por defecto para facilidad (el usuario puede editarlo)
+            setShowCloseSessionModal(true);
+        } catch (error) {
+            alert(error.response?.data?.detail || "Error obteniendo resumen de caja");
+        }
+    };
+
+    const handleCloseSession = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post(`/cash/close/${cashSession.id}`, {
+                actual_cash: parseFloat(actuals.efectivo) || 0,
+                actual_card: parseFloat(actuals.tarjeta) || 0,
+                actual_transfer: parseFloat(actuals.transferencia) || 0
+            });
+            alert("¡Turno de caja cerrado exitosamente!");
+            setShowCloseSessionModal(false);
+            setCashSession(null);
+            setShowOpenSessionModal(true); // Volver a exigir apertura
+        } catch (error) {
+            alert(error.response?.data?.detail || "Error al cerrar la caja");
+        }
+    };
 
     const fetchProducts = async () => {
         try {
@@ -73,45 +140,50 @@ const POS = () => {
         return { hasDiscount: false, current: product.price };
     };
 
-    const addToCart = (product) => {
+    const addToCart = (product, specificBarcode = null) => {
         const itemInfo = getFinalPrice(product);
-        const cartItem = cart.find(item => item.product_id === product.id);
+        const uniqueId = specificBarcode ? `${product.id}-${specificBarcode.id}` : `${product.id}-general`;
+        const cartItem = cart.find(item => item.uniqueId === uniqueId);
+
+        let availableStock = specificBarcode ? specificBarcode.stock : product.stock;
 
         if (cartItem) {
-            if (cartItem.quantity + 1 > product.stock) {
-                alert(`Solo quedan ${product.stock} unidades de ${product.name}`);
+            if (cartItem.quantity + 1 > availableStock) {
+                alert(`Solo quedan ${availableStock} unidades de ${specificBarcode ? 'este lote' : product.name}`);
                 return;
             }
             const updatedCart = cart.map(item =>
-                item.product_id === product.id
+                item.uniqueId === uniqueId
                     ? { ...item, quantity: item.quantity + 1, price: itemInfo.current }
                     : item
             );
             setCart(updatedCart);
         } else {
-            if (product.stock < 1) {
-                alert(`No hay stock de ${product.name}`);
+            if (availableStock < 1) {
+                alert(`No hay stock disponible`);
                 return;
             }
             setCart([...cart, {
+                uniqueId,
                 product_id: product.id,
-                name: product.name,
+                barcode_id: specificBarcode ? specificBarcode.id : null,
+                name: specificBarcode ? `${product.name} (Lte: ${specificBarcode.code})` : product.name,
                 price: itemInfo.current,
                 original_price: itemInfo.original,
                 has_discount: itemInfo.hasDiscount,
                 quantity: 1,
-                stock: product.stock
+                stock: availableStock
             }]);
         }
     };
 
-    const updateQuantity = (productId, delta) => {
-        const item = cart.find(i => i.product_id === productId);
+    const updateQuantity = (uniqueId, delta) => {
+        const item = cart.find(i => i.uniqueId === uniqueId);
         if (!item) return;
 
         const newQuantity = item.quantity + delta;
         if (newQuantity < 1) {
-            removeFromCart(productId);
+            removeFromCart(uniqueId);
             return;
         }
         if (newQuantity > item.stock) {
@@ -120,13 +192,13 @@ const POS = () => {
         }
 
         const updatedCart = cart.map(i =>
-            i.product_id === productId ? { ...i, quantity: newQuantity } : i
+            i.uniqueId === uniqueId ? { ...i, quantity: newQuantity } : i
         );
         setCart(updatedCart);
     };
 
-    const removeFromCart = (productId) => {
-        setCart(cart.filter(item => item.product_id !== productId));
+    const removeFromCart = (uniqueId) => {
+        setCart(cart.filter(item => item.uniqueId !== uniqueId));
     };
 
     const calculateTotal = () => {
@@ -146,6 +218,7 @@ const POS = () => {
                 project_id: activeProject,
                 items: cart.map(item => ({
                     product_id: item.product_id,
+                    barcode_id: item.barcode_id,
                     quantity: item.quantity,
                     price: item.price
                 })),
@@ -164,8 +237,24 @@ const POS = () => {
         }
     };
 
+    // Auto-add product when barcode exactly matches
+    useEffect(() => {
+        if (!searchQuery.trim()) return;
+        const searchLower = searchQuery.toLowerCase().trim();
+        for (const product of products) {
+            const matchedBarcode = product.barcodes?.find(bc => bc.code.toLowerCase() === searchLower);
+            if (matchedBarcode) {
+                addToCart(product, matchedBarcode);
+                setSearchQuery('');
+                return;
+            }
+        }
+    }, [searchQuery, products]);
+
     const filteredProducts = products.filter(product => {
-        return product.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const searchLower = searchQuery.toLowerCase();
+        const barcodesMatch = product.barcodes?.some(bc => bc.code.toLowerCase().includes(searchLower));
+        return product.name.toLowerCase().includes(searchLower) || barcodesMatch;
     });
 
     const isProductExpired = (product) => {
@@ -176,24 +265,123 @@ const POS = () => {
     };
 
     return (
-        <div className="flex h-screen bg-gray-100 overflow-hidden">
+        <div className="flex h-screen bg-gray-100 overflow-hidden relative">
+            {/* Overlay Apertura de Caja */}
+            {showOpenSessionModal && (
+                <div className="absolute inset-0 z-50 bg-gray-900/90 flex items-center justify-center backdrop-blur-sm">
+                    <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+                        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Lock className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Caja Cerrada</h2>
+                        <p className="text-gray-500 mb-6 text-sm">Para iniciar a cobrar, debes abrir un turno de caja ingresando tu fondo de sencillo inicial.</p>
+                        <form onSubmit={handleOpenSession} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 text-left mb-1">Monto Inicial de Caja ({currencySymbol})</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    min="0"
+                                    required
+                                    className="w-full border-2 border-gray-200 p-3 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none text-lg font-bold text-center"
+                                    value={initialCash}
+                                    onChange={(e) => setInitialCash(e.target.value)}
+                                    placeholder="Ej. 50.00"
+                                />
+                            </div>
+                            <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition shadow-lg flex items-center justify-center gap-2">
+                                <Unlock className="w-5 h-5"/> Abrir Turno
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Cierre de Caja */}
+            {showCloseSessionModal && sessionSummary && (
+                <div className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+                        <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <Wallet className="text-blue-600"/> Cierre de Caja
+                            </h2>
+                            <button onClick={() => setShowCloseSessionModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
+                        </div>
+                        <form onSubmit={handleCloseSession} className="p-6">
+                            <div className="mb-6 bg-blue-50 p-4 rounded-xl border border-blue-100 flex justify-between items-center">
+                                <div>
+                                    <p className="text-sm text-blue-600 font-semibold mb-1">Caja Inicial / Sencillo</p>
+                                    <p className="text-xl font-bold text-blue-900">{currencySymbol} {sessionSummary.initial_cash.toFixed(2)}</p>
+                                </div>
+                            </div>
+                            
+                            <p className="text-sm text-gray-500 mb-4 font-semibold uppercase tracking-wider">Cuadre Físico vs Sistema</p>
+                            
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4 items-center p-3 bg-gray-50 rounded-lg border">
+                                    <div>
+                                        <p className="font-bold text-gray-700">Efectivo 💵</p>
+                                        <p className="text-xs text-gray-500">Esperado: {currencySymbol} {sessionSummary.expected_cash.toFixed(2)}</p>
+                                    </div>
+                                    <div>
+                                        <input type="number" step="0.01" required value={actuals.efectivo} onChange={e => setActuals({...actuals, efectivo: e.target.value})} className="w-full border p-2 rounded text-right font-bold focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 items-center p-3 bg-gray-50 rounded-lg border">
+                                    <div>
+                                        <p className="font-bold text-gray-700">Tarjeta 💳</p>
+                                        <p className="text-xs text-gray-500">Esperado: {currencySymbol} {sessionSummary.expected_card.toFixed(2)}</p>
+                                    </div>
+                                    <div>
+                                        <input type="number" step="0.01" value={actuals.tarjeta} onChange={e => setActuals({...actuals, tarjeta: e.target.value})} className="w-full border p-2 rounded text-right font-bold focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 items-center p-3 bg-gray-50 rounded-lg border">
+                                    <div>
+                                        <p className="font-bold text-gray-700">Transferencia 📱</p>
+                                        <p className="text-xs text-gray-500">Esperado: {currencySymbol} {sessionSummary.expected_transfer.toFixed(2)}</p>
+                                    </div>
+                                    <div>
+                                        <input type="number" step="0.01" value={actuals.transferencia} onChange={e => setActuals({...actuals, transferencia: e.target.value})} className="w-full border p-2 rounded text-right font-bold focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" className="w-full mt-6 py-3 bg-red-600 text-white rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg">Confirmar y Cerrar Caja</button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* Products / Left Panel - Full width on mobile, 2/3 on desktop */}
             <div className="flex-1 md:flex-[2] flex flex-col bg-white shadow-lg my-2 mx-2 xl:my-4 xl:mx-4 rounded-xl border border-gray-100 p-3 xl:p-6 overflow-hidden h-[calc(100vh-1rem)] xl:h-[calc(100vh-2rem)]">
                 {/* Mobile cart toggle button */}
                 <div className="md:hidden flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-gray-800">Caja Registradora</h2>
-                    <button
-                        onClick={() => setShowCart(true)}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg"
-                    >
-                        <ShoppingCart className="w-5 h-5" />
-                        Carrito ({cart.length})
-                    </button>
+                    <div className="flex gap-2">
+                        {cashSession && (
+                            <button onClick={fetchSessionSummary} className="bg-red-50 text-red-600 px-3 py-2 rounded-lg font-bold text-sm">Cerrar Caja</button>
+                        )}
+                        <button
+                            onClick={() => setShowCart(true)}
+                            className="bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center gap-2 shadow-lg"
+                        >
+                            <ShoppingCart className="w-5 h-5" />
+                            ({cart.length})
+                        </button>
+                    </div>
                 </div>
 
                 {/* Desktop header */}
                 <div className="hidden md:flex justify-between items-center mb-4 xl:mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800">Caja Registradora</h2>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-2xl font-bold text-gray-800">Caja Registradora</h2>
+                        {cashSession && (
+                            <button onClick={fetchSessionSummary} className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-1.5 rounded-full font-bold text-sm flex items-center gap-2 transition">
+                                <Lock className="w-4 h-4"/> Cerrar Caja
+                            </button>
+                        )}
+                    </div>
                     <div className="relative w-64">
                         <input
                             type="text"
@@ -276,7 +464,7 @@ const POS = () => {
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar my-4 space-y-3">
                     {cart.map((item) => (
-                        <div key={item.product_id} className="flex flex-col border p-3 rounded-lg bg-gray-50 hover:bg-white transition relative overflow-hidden">
+                        <div key={item.uniqueId} className="flex flex-col border p-3 rounded-lg bg-gray-50 hover:bg-white transition relative overflow-hidden">
                             {item.has_discount && <div className="absolute top-0 right-0 bg-red-100 text-red-700 text-[9px] font-bold px-2 py-1 flex items-center gap-1"><Tag className="w-3 h-3" /> Promoción Aplicada</div>}
 
                             <div className="flex justify-between items-start mb-2 pr-20">
@@ -286,11 +474,11 @@ const POS = () => {
                             <div className="flex justify-between items-center mt-1">
                                 <span className="font-black text-blue-600 text-lg">{currencySymbol} {(item.price * item.quantity).toFixed(2)}</span>
                                 <div className="flex items-center gap-2 bg-white rounded-lg border p-1 shadow-sm">
-                                    <button onClick={() => updateQuantity(item.product_id, -1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
+                                    <button onClick={() => updateQuantity(item.uniqueId, -1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
                                         <Minus className="w-4 h-4" />
                                     </button>
                                     <span className="w-8 text-center font-bold text-gray-700">{item.quantity}</span>
-                                    <button onClick={() => updateQuantity(item.product_id, 1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
+                                    <button onClick={() => updateQuantity(item.uniqueId, 1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
                                         <Plus className="w-4 h-4" />
                                     </button>
                                 </div>
@@ -379,7 +567,7 @@ const POS = () => {
 
                         <div className="flex-1 overflow-y-auto p-4 space-y-3">
                             {cart.map((item) => (
-                                <div key={item.product_id} className="flex flex-col border p-3 rounded-lg bg-gray-50 relative overflow-hidden">
+                                <div key={item.uniqueId} className="flex flex-col border p-3 rounded-lg bg-gray-50 relative overflow-hidden">
                                     {item.has_discount && <div className="absolute top-0 right-0 bg-red-100 text-red-700 text-[9px] font-bold px-2 py-1 flex items-center gap-1"><Tag className="w-3 h-3" /> Promoción</div>}
 
                                     <div className="flex justify-between items-start mb-2 pr-16">
@@ -389,11 +577,11 @@ const POS = () => {
                                     <div className="flex justify-between items-center mt-1">
                                         <span className="font-black text-blue-600 text-base">{currencySymbol} {(item.price * item.quantity).toFixed(2)}</span>
                                         <div className="flex items-center gap-1 bg-white rounded border p-1">
-                                            <button onClick={() => updateQuantity(item.product_id, -1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
+                                            <button onClick={() => updateQuantity(item.uniqueId, -1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
                                                 <Minus className="w-3 h-3" />
                                             </button>
                                             <span className="w-6 text-center font-bold text-gray-700 text-sm">{item.quantity}</span>
-                                            <button onClick={() => updateQuantity(item.product_id, 1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
+                                            <button onClick={() => updateQuantity(item.uniqueId, 1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
                                                 <Plus className="w-3 h-3" />
                                             </button>
                                         </div>
