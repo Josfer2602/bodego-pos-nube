@@ -1,6 +1,13 @@
 @import "tailwindcss";
 
 body {
-  background-color: #f8fafc;
+  background-color: #f4f4f5; /* Un gris un poco más refinado */
   color: #0f172a;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  font-family: 'Inter', system-ui, sans-serif;
 }

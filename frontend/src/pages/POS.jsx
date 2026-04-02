@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { useAuth } from '../AuthContext';
 import { ShoppingCart, Search, Plus, Minus, Trash2, CreditCard, Tag, X, Lock, Unlock, DollarSign, Wallet } from 'lucide-react';
+import { toast } from 'sonner';
 
 const POS = () => {
     const { activeProject, projectDetails, user } = useAuth();
@@ -54,7 +55,7 @@ const POS = () => {
             });
             fetchCurrentSession();
         } catch (error) {
-            alert(error.response?.data?.detail || "Error al abrir la caja");
+            toast.error(error.response?.data?.detail || "Error al abrir la caja");
         }
     };
 
@@ -69,7 +70,7 @@ const POS = () => {
             }); // Autocompletar por defecto para facilidad (el usuario puede editarlo)
             setShowCloseSessionModal(true);
         } catch (error) {
-            alert(error.response?.data?.detail || "Error obteniendo resumen de caja");
+            toast.error(error.response?.data?.detail || "Error obteniendo resumen de caja");
         }
     };
 
@@ -81,12 +82,12 @@ const POS = () => {
                 actual_card: parseFloat(actuals.tarjeta) || 0,
                 actual_transfer: parseFloat(actuals.transferencia) || 0
             });
-            alert("¡Turno de caja cerrado exitosamente!");
+            toast.success("¡Turno de caja cerrado exitosamente!");
             setShowCloseSessionModal(false);
             setCashSession(null);
             setShowOpenSessionModal(true); // Volver a exigir apertura
         } catch (error) {
-            alert(error.response?.data?.detail || "Error al cerrar la caja");
+            toast.error(error.response?.data?.detail || "Error al cerrar la caja");
         }
     };
 
@@ -149,7 +150,7 @@ const POS = () => {
 
         if (cartItem) {
             if (cartItem.quantity + 1 > availableStock) {
-                alert(`Solo quedan ${availableStock} unidades de ${specificBarcode ? 'este lote' : product.name}`);
+                toast.warning(`Solo quedan ${availableStock} unidades de ${specificBarcode ? 'este lote' : product.name}`);
                 return;
             }
             const updatedCart = cart.map(item =>
@@ -160,7 +161,7 @@ const POS = () => {
             setCart(updatedCart);
         } else {
             if (availableStock < 1) {
-                alert(`No hay stock disponible`);
+                toast.error(`No hay stock disponible`);
                 return;
             }
             setCart([...cart, {
@@ -187,7 +188,7 @@ const POS = () => {
             return;
         }
         if (newQuantity > item.stock) {
-            alert(`Stock máximo alcanzado (${item.stock})`);
+            toast.warning(`Stock máximo alcanzado (${item.stock})`);
             return;
         }
 
@@ -209,7 +210,7 @@ const POS = () => {
         if (cart.length === 0) return;
 
         if (projectDetails?.status !== 'active' && user.role !== 'superadmin') {
-            alert("No puedes procesar ventas. La sucursal está desactivada.");
+            toast.error("No puedes procesar ventas. La sucursal está desactivada.");
             return;
         }
 
@@ -233,7 +234,7 @@ const POS = () => {
             setCart([]);
             fetchProducts();
         } catch (error) {
-            alert(error.response?.data?.detail || "Error al procesar la venta");
+            toast.error(error.response?.data?.detail || "Error al procesar la venta");
         }
     };
 
@@ -268,8 +269,8 @@ const POS = () => {
         <div className="flex h-screen bg-gray-100 overflow-hidden relative">
             {/* Overlay Apertura de Caja */}
             {showOpenSessionModal && (
-                <div className="absolute inset-0 z-50 bg-gray-900/90 flex items-center justify-center backdrop-blur-sm">
-                    <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+                <div className="absolute inset-0 z-50 bg-gray-900/60 flex items-center justify-center backdrop-blur-md">
+                    <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border border-white/20">
                         <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Lock className="w-8 h-8" />
                         </div>
@@ -299,8 +300,8 @@ const POS = () => {
 
             {/* Modal Cierre de Caja */}
             {showCloseSessionModal && sessionSummary && (
-                <div className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+                <div className="absolute inset-0 z-50 bg-gray-900/60 flex items-center justify-center p-4 backdrop-blur-md">
+                    <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-white/20">
                         <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                                 <Wallet className="text-blue-600"/> Cierre de Caja
@@ -410,14 +411,22 @@ const POS = () => {
 
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 xl:gap-4">
-                        {loading && <div className="col-span-full p-8 text-center text-gray-500 font-medium">Cargando inventario...</div>}
+                        {loading && Array.from({length: 12}).map((_, i) => (
+                            <div key={i} className="border border-gray-100 rounded-xl p-4 bg-white/60 animate-pulse h-[120px] xl:h-[140px] flex flex-col justify-between shadow-sm">
+                                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                <div className="flex justify-between items-end mt-4">
+                                    <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                                    <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                                </div>
+                            </div>
+                        ))}
                         {!loading && filteredProducts.map((product) => {
                             const pricing = getFinalPrice(product);
                             return (
                                 <div
                                     key={product.id}
                                     onClick={() => addToCart(product)}
-                                    className={`relative border rounded-lg xl:rounded-xl p-2 xl:p-4 cursor-pointer flex flex-col transition hover:-translate-y-1 hover:shadow-lg ${product.stock === 0 ? 'opacity-50 grayscale bg-gray-50' : 'bg-white hover:border-blue-300'}`}
+                                    className={`relative border rounded-lg xl:rounded-xl p-2 xl:p-4 cursor-pointer flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-xl ${product.stock === 0 ? 'opacity-50 grayscale bg-gray-50' : 'bg-white hover:border-blue-400'}`}
                                 >
                                     {pricing.hasDiscount && (
                                         <div className="absolute top-2 right-2 bg-red-500 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow-sm flex items-center gap-1 z-10">
@@ -448,8 +457,10 @@ const POS = () => {
                             )
                         })}
                         {filteredProducts.length === 0 && !loading && (
-                            <div className="col-span-full p-12 text-center text-gray-400 border-2 border-dashed rounded-xl">
-                                Ningún producto válido encontrado en esta sucursal.
+                            <div className="col-span-full p-16 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 bg-gray-50/50 rounded-2xl mt-4">
+                                <Search className="w-16 h-16 text-gray-300 mb-4" />
+                                <span className="font-medium text-lg text-gray-500">No encontramos productos</span>
+                                <span className="text-sm">Intenta con otro término de búsqueda o código de barras.</span>
                             </div>
                         )}
                     </div>
@@ -491,9 +502,9 @@ const POS = () => {
                         </div>
                     ))}
                     {cart.length === 0 && (
-                        <div className="h-full flex flex-col items-center justify-center opacity-50 px-8 text-center">
-                            <ShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
-                            <p className="text-gray-500">Tu carrito está vacío. Clica en los productos para agregarlos.</p>
+                        <div className="h-full flex flex-col items-center justify-center px-8 text-center border-2 border-dashed border-gray-200 rounded-xl m-2 bg-gray-50/50">
+                            <ShoppingCart className="w-16 h-16 text-gray-300 mb-4 opacity-70" />
+                            <p className="text-gray-400 font-medium text-sm">Tu carrito está vacío.<br/>Selecciona productos para agregarlos.</p>
                         </div>
                     )}
                 </div>
@@ -594,9 +605,9 @@ const POS = () => {
                                 </div>
                             ))}
                             {cart.length === 0 && (
-                                <div className="h-32 flex flex-col items-center justify-center opacity-50 text-center">
-                                    <ShoppingCart className="w-12 h-12 text-gray-300 mb-2" />
-                                    <p className="text-gray-500 text-sm">Carrito vacío</p>
+                                <div className="h-32 flex flex-col items-center justify-center px-4 text-center border-2 border-dashed border-gray-200 rounded-xl m-4 bg-gray-50/50">
+                                    <ShoppingCart className="w-8 h-8 text-gray-300 mb-2 opacity-70" />
+                                    <p className="text-gray-400 font-medium text-xs">Carrito vacío</p>
                                 </div>
                             )}
                         </div>
@@ -652,8 +663,8 @@ const POS = () => {
 
             {/* Success Modal */}
             {showSuccessModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300">
-                    <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl transform scale-100 flex flex-col items-center text-center animate-[bounce_0.5s_ease-in-out_1]">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-md transition-opacity duration-300">
+                    <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl transform scale-100 flex flex-col items-center text-center animate-[bounce_0.5s_ease-in-out_1] border border-white/20">
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
                             <svg className="w-10 h-10 text-green-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />

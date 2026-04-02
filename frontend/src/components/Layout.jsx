@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Package, Clock, Shield, LogOut, ArrowLeftRight, Tag, BarChart2, Wallet } from 'lucide-react';
 import { useAuth } from '../AuthContext';
+import { Toaster } from 'sonner';
 
 const Layout = ({ children }) => {
     const location = useLocation();
@@ -24,8 +25,9 @@ const Layout = ({ children }) => {
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row bg-gray-100">
+            <Toaster position="top-center" richColors closeButton />
             {/* Mobile top bar */}
-            <div className="md:hidden flex items-center justify-between bg-white p-3 shadow-md sticky top-0 z-50">
+            <div className="md:hidden flex items-center justify-between bg-white/80 backdrop-blur-md p-3 shadow-sm border-b sticky top-0 z-50">
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={(e) => {
@@ -79,29 +81,29 @@ const Layout = ({ children }) => {
                 <nav className="flex-1 mt-4 xl:mt-6 overflow-x-hidden">
                     {location.pathname.startsWith('/admin') ? (
                         <>
-                            <Link title="Gestión Global" to="/admin" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition ${location.pathname === '/admin' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                            <Link title="Gestión Global" to="/admin" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/admin' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
                                 <Shield className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Gestión Global</span>
                             </Link>
                         </>
                     ) : (
                         <>
-                            <Link title="Punto de Venta" to="/" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition ${location.pathname === '/' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                            <Link title="Punto de Venta" to="/" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
                                 <ShoppingCart className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Punto de Venta</span>
                             </Link>
-                            <Link title="Dashboard" to="/dashboard" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition ${location.pathname === '/dashboard' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                            <Link title="Dashboard" to="/dashboard" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/dashboard' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
                                 <BarChart2 className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Dashboard</span>
                             </Link>
-                            <Link title="Inventario" to="/inventory" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition ${location.pathname === '/inventory' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                            <Link title="Inventario" to="/inventory" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/inventory' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
                                 <Package className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Inventario</span>
                             </Link>
-                            <Link title="Promociones" to="/promotions" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition ${location.pathname === '/promotions' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                            <Link title="Promociones" to="/promotions" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/promotions' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
                                 <Tag className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Promociones</span>
                             </Link>
-                            <Link title="Historial" to="/history" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition ${location.pathname === '/history' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                            <Link title="Historial" to="/history" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/history' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
                                 <Clock className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Historial</span>
                             </Link>
                             {(user?.role === 'superadmin' || user?.role === 'admin') && (
-                                <Link title="Auditoría Cajas" to="/cash-history" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition ${location.pathname === '/cash-history' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                                <Link title="Auditoría Cajas" to="/cash-history" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/cash-history' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
                                     <Wallet className="w-5 h-5 xl:mr-3 text-red-300" /> <span className="hidden xl:block text-red-200">Auditoría Cajas</span>
                                 </Link>
                             )}
@@ -109,7 +111,7 @@ const Layout = ({ children }) => {
                     )}
 
                     {!location.pathname.startsWith('/admin') && (user?.role === 'admin' || user?.role === 'superadmin') && (
-                        <Link title="Panel Admin" to="/admin" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition ${location.pathname === '/admin' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                        <Link title="Panel Admin" to="/admin" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/admin' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
                             <Shield className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Panel Admin</span>
                         </Link>
                     )}
