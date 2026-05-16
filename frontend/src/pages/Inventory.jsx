@@ -27,6 +27,8 @@ const Inventory = () => {
     const [editBarcodeData, setEditBarcodeData] = useState({ stock: 0, expiration_date: '' });
     const [showSuccess, setShowSuccess] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null); // barcode id pending delete
+    const [confirmDeleteProductId, setConfirmDeleteProductId] = useState(null); // product id pending delete
 
     const [formData, setFormData] = useState({
         name: '',
@@ -218,9 +220,9 @@ const Inventory = () => {
     };
 
     const handleDeleteBarcode = async (barcodeId) => {
-        if (!window.confirm('¿Eliminar este código de barras?')) return;
         try {
             await api.delete(`/products/barcodes/${barcodeId}`);
+            setConfirmDeleteId(null);
             fetchProducts();
         } catch (error) {
             alert(error.response?.data?.detail || 'Error eliminando lote');
@@ -249,13 +251,12 @@ const Inventory = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('¿Estás seguro de eliminar este producto?')) {
-            try {
-                await api.delete(`/products/${id}`, { params: { project_id: activeProject } });
-                fetchProducts();
-            } catch (error) {
-                alert(error.response?.data?.detail || 'Error eliminando producto');
-            }
+        try {
+            await api.delete(`/products/${id}`, { params: { project_id: activeProject } });
+            setConfirmDeleteProductId(null);
+            fetchProducts();
+        } catch (error) {
+            alert(error.response?.data?.detail || 'Error eliminando producto');
         }
     };
 
@@ -404,8 +405,15 @@ const Inventory = () => {
                                     <td className={`p-4 ${expStatus.class}`}>{expStatus.text}</td>
                                     <td className="p-4 text-center">
                                         <div className="flex justify-center gap-2">
-                                            <button onClick={() => handleEdit(product)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"><Edit2 className="w-5 h-5" /></button>
-                                            <button onClick={() => handleDelete(product.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-5 h-5" /></button>
+                                            <button onClick={() => handleEdit(product)} className="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition shadow-sm border border-blue-100"><Edit2 className="w-5 h-5" /></button>
+                                            {confirmDeleteProductId === product.id ? (
+                                                <div className="flex gap-1 items-center bg-red-50 rounded-xl p-1 border border-red-200">
+                                                    <button onClick={() => handleDelete(product.id)} className="px-3 py-2 bg-red-600 text-white text-xs font-bold rounded-lg shadow-sm">✓ Borrar</button>
+                                                    <button onClick={() => setConfirmDeleteProductId(null)} className="px-3 py-2 bg-white text-gray-600 text-xs font-bold rounded-lg shadow-sm border border-gray-200">Cancelar</button>
+                                                </div>
+                                            ) : (
+                                                <button onClick={() => setConfirmDeleteProductId(product.id)} className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition shadow-sm border border-red-100"><Trash2 className="w-5 h-5" /></button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -448,13 +456,20 @@ const Inventory = () => {
                                                                     <td className="px-4 py-2 text-center flex justify-center gap-2">
                                                                         {isEditing ? (
                                                                             <>
-                                                                                <button onClick={() => handleUpdateBarcode(bc.id)} className="text-green-600 p-1 hover:bg-green-50 rounded"><Save className="w-4 h-4"/></button>
-                                                                                <button onClick={() => setEditingBarcodeId(null)} className="text-gray-500 p-1 hover:bg-gray-100 rounded"><X className="w-4 h-4"/></button>
+                                                                                <button onClick={() => handleUpdateBarcode(bc.id)} className="w-8 h-8 flex items-center justify-center bg-green-50 text-green-600 rounded-lg shadow-sm border border-green-100"><Save className="w-4 h-4"/></button>
+                                                                                <button onClick={() => setEditingBarcodeId(null)} className="w-8 h-8 flex items-center justify-center bg-gray-50 text-gray-500 rounded-lg shadow-sm border border-gray-200"><X className="w-4 h-4"/></button>
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                <button onClick={() => { setEditingBarcodeId(bc.id); setEditBarcodeData({ stock: bc.stock, expiration_date: bc.expiration_date || '' }); }} className="text-blue-600 p-1 hover:bg-blue-50 rounded"><Edit2 className="w-4 h-4"/></button>
-                                                                                <button onClick={() => handleDeleteBarcode(bc.id)} className="text-red-600 p-1 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4"/></button>
+                                                                                <button onClick={() => { setEditingBarcodeId(bc.id); setEditBarcodeData({ stock: bc.stock, expiration_date: bc.expiration_date || '' }); }} className="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg shadow-sm border border-blue-100"><Edit2 className="w-4 h-4"/></button>
+                                                                                {confirmDeleteId === bc.id ? (
+                                                                                    <span className="flex items-center gap-1">
+                                                                                        <button onClick={() => handleDeleteBarcode(bc.id)} className="text-white bg-red-600 px-2 py-1.5 rounded-lg text-xs font-bold shadow-sm">✓</button>
+                                                                                        <button onClick={() => setConfirmDeleteId(null)} className="text-gray-600 bg-white border border-gray-200 px-2 py-1.5 rounded-lg text-xs font-bold shadow-sm">✗</button>
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <button onClick={() => setConfirmDeleteId(bc.id)} className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-600 rounded-lg shadow-sm border border-red-100"><Trash2 className="w-4 h-4"/></button>
+                                                                                )}
                                                                             </>
                                                                         )}
                                                                     </td>
@@ -501,13 +516,20 @@ const Inventory = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-1 ml-2">
-                                        <button onClick={() => handleEdit(product)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition">
-                                            <Edit2 className="w-4 h-4" />
+                                    <div className="flex gap-2 ml-2">
+                                        <button onClick={() => handleEdit(product)} className="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 rounded-xl shadow-sm border border-blue-100">
+                                            <Edit2 className="w-5 h-5" />
                                         </button>
-                                        <button onClick={() => handleDelete(product.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        {confirmDeleteProductId === product.id ? (
+                                            <div className="flex gap-1 items-center bg-red-50 rounded-xl p-1 border border-red-200">
+                                                <button onClick={() => handleDelete(product.id)} className="px-3 py-2 bg-red-600 text-white text-xs font-bold rounded-lg shadow-sm">✓</button>
+                                                <button onClick={() => setConfirmDeleteProductId(null)} className="px-3 py-2 bg-white text-gray-600 text-xs font-bold rounded-lg shadow-sm border border-gray-200">✗</button>
+                                            </div>
+                                        ) : (
+                                            <button onClick={() => setConfirmDeleteProductId(product.id)} className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-600 rounded-xl shadow-sm border border-red-100">
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -636,8 +658,20 @@ const Inventory = () => {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div><label className="text-sm font-medium text-gray-700 block mb-1">Precio Final ({currencySymbol})</label>
                                         <input type="number" step="0.01" name="price" required className="w-full border p-2 rounded focus:ring-2 outline-none bg-green-50 text-green-900 font-bold" value={formData.price} onChange={handleFormChange} /></div>
-                                    <div><label className="text-sm font-medium text-gray-700 block mb-1">Stock</label>
-                                        <input type="number" name="stock" required min="0" className="w-full border p-2 rounded focus:ring-2 outline-none" value={formData.stock} onChange={handleFormChange} /></div>
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700 block mb-1">
+                                            Stock {editingId && <span className="text-xs text-blue-500 font-normal">(suma de lotes)</span>}
+                                        </label>
+                                        {editingId ? (
+                                            <div className="w-full border p-2 rounded bg-gray-100 text-gray-500 font-mono text-sm flex items-center gap-1">
+                                                <span className="text-gray-400 text-xs">Σ</span>
+                                                <span className="font-bold text-gray-700">{formData.stock}</span>
+                                                <span className="text-xs text-gray-400 ml-1">calculado automáticamente</span>
+                                            </div>
+                                        ) : (
+                                            <input type="number" name="stock" required min="0" className="w-full border p-2 rounded focus:ring-2 outline-none" value={formData.stock} onChange={handleFormChange} />
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div><label className="text-sm font-medium text-gray-700 block mb-1">Fecha de Vencimiento (opcional)</label>
@@ -650,19 +684,38 @@ const Inventory = () => {
                                             <Barcode className="w-4 h-4 text-blue-600" />
                                             Agregar Nuevo Lote / Código
                                         </label>
+                                        <p className="text-xs text-gray-400 mb-3">
+                                            Escanea el código, completa stock y vencimiento, luego presiona <strong>+ Agregar Lote</strong>.
+                                        </p>
                                         <div className="flex flex-col gap-3">
-                                            <input value={newBarcodeCode} onChange={e => setNewBarcodeCode(e.target.value)}
-                                                placeholder="Escanear o escribir código..." className="w-full border p-2 rounded font-mono focus:ring-2 outline-none" />
+                                            <input
+                                                value={newBarcodeCode}
+                                                onChange={e => setNewBarcodeCode(e.target.value)}
+                                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); } }}
+                                                placeholder="Escanear o escribir código..."
+                                                className="w-full border p-2 rounded font-mono focus:ring-2 outline-none"
+                                            />
                                             <div className="flex gap-2">
                                                 <div className="flex-1">
                                                     <label className="text-xs font-semibold text-gray-500">Stock</label>
-                                                    <input type="number" min="0" value={newBarcodeStock} onChange={e => setNewBarcodeStock(e.target.value)}
-                                                        placeholder="0" className="w-full border p-2 rounded focus:ring-2 outline-none" />
+                                                    <input
+                                                        type="number" min="0"
+                                                        value={newBarcodeStock}
+                                                        onChange={e => setNewBarcodeStock(e.target.value)}
+                                                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); } }}
+                                                        placeholder="0"
+                                                        className="w-full border p-2 rounded focus:ring-2 outline-none"
+                                                    />
                                                 </div>
                                                 <div className="flex-1">
                                                     <label className="text-xs font-semibold text-gray-500">Vencimiento</label>
-                                                    <input type="date" value={newBarcodeDate} onChange={e => setNewBarcodeDate(e.target.value)}
-                                                        className="w-full border p-2 rounded focus:ring-2 outline-none" />
+                                                    <input
+                                                        type="date"
+                                                        value={newBarcodeDate}
+                                                        onChange={e => setNewBarcodeDate(e.target.value)}
+                                                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); } }}
+                                                        className="w-full border p-2 rounded focus:ring-2 outline-none"
+                                                    />
                                                 </div>
                                                 <div className="flex items-end">
                                                     <button type="button" onClick={() => handleAddBarcodeToExisting(editingId)}

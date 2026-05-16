@@ -13,6 +13,12 @@ router = APIRouter(
     tags=["Products"]
 )
 
+def recalculate_stock(product, db):
+    """Recalcula el stock del producto como la suma de todos sus lotes."""
+    total = sum(bc.stock for bc in db.query(models.Barcode).filter(models.Barcode.product_id == product.id).all())
+    product.stock = total
+    db.commit()
+
 @router.get("/", response_model=List[schemas.ProductResponse])
 def read_products(project_id: int, skip: int = 0, limit: int = 1000, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
@@ -67,6 +73,7 @@ def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)
     )
     db.add(db_barcode)
     db.commit()
+    recalculate_stock(db_product, db)
     db.refresh(db_product)
     
     return db_product
@@ -86,11 +93,12 @@ def update_product(product_id: int, product: schemas.ProductCreate, db: Session 
     
     product_data = product.dict()
     product_data.pop("barcode", None)
+    product_data.pop("stock", None)  # El stock se calcula siempre desde los lotes
     
     for key, value in product_data.items():
         setattr(db_product, key, value)
-        
-    db.commit()
+    
+    recalculate_stock(db_product, db)
     db.refresh(db_product)
     return db_product
 
@@ -141,10 +149,10 @@ def add_barcode_to_product(product_id: int, barcode_in: schemas.BarcodeCreate, d
         stock=barcode_in.stock,
         expiration_date=barcode_in.expiration_date
     )
-    product.stock += (barcode_in.stock or 0)
     db.add(new_barcode)
     db.commit()
     db.refresh(new_barcode)
+    recalculate_stock(product, db)
     return new_barcode
 
 @router.put("/barcodes/{barcode_id}", response_model=schemas.BarcodeResponse)
@@ -159,14 +167,13 @@ def update_barcode(barcode_id: int, barcode_in: schemas.BarcodeUpdate, db: Sessi
     
     # Adjust product stock if barcode stock changes
     if barcode_in.stock is not None:
-        stock_diff = barcode_in.stock - barcode.stock
-        product.stock += stock_diff
         barcode.stock = barcode_in.stock
         
     if barcode_in.expiration_date is not None:
         barcode.expiration_date = barcode_in.expiration_date
         
     db.commit()
+    recalculate_stock(product, db)
     db.refresh(barcode)
     return barcode
 
@@ -180,11 +187,9 @@ def delete_barcode(barcode_id: int, db: Session = Depends(get_db), current_user:
     if current_user.role != "superadmin" and project not in current_user.projects:
         raise HTTPException(status_code=403, detail="Not enough permissions")
         
-    # Subtract barcode stock from product total
-    product.stock -= barcode.stock
-    
     db.delete(barcode)
     db.commit()
+    recalculate_stock(product, db)
     return {"message": "Código de barras eliminado exitosamente"}
 
 @router.post("/bulk-upload", response_model=dict)
