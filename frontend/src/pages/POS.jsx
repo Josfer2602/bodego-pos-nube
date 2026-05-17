@@ -14,6 +14,7 @@ const POS = () => {
     const [showCart, setShowCart] = useState(false); // Para mobile: mostrar/ocultar carrito
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('efectivo'); // 'efectivo', 'yape', 'tarjeta_credito'
+    const [amountReceived, setAmountReceived] = useState(''); // Monto recibido para vuelto
 
     // Cash Session States
     const [cashSession, setCashSession] = useState(null);
@@ -232,6 +233,7 @@ const POS = () => {
                 setShowSuccessModal(false);
             }, 3000);
             setCart([]);
+            setAmountReceived('');
             fetchProducts();
         } catch (error) {
             toast.error(error.response?.data?.detail || "Error al procesar la venta");
@@ -264,6 +266,11 @@ const POS = () => {
         const expDate = new Date(product.expiration_date);
         return expDate.getTime() < today.getTime();
     };
+
+    const cartTotal = parseFloat(calculateTotal() || 0);
+    const receivedAmountNum = parseFloat(amountReceived) || 0;
+    const changeAmount = Math.max(0, receivedAmountNum - cartTotal);
+    const isCheckoutDisabled = cart.length === 0 || (paymentMethod === 'efectivo' && receivedAmountNum < cartTotal);
 
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden relative">
@@ -533,10 +540,37 @@ const POS = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex justify-between items-center mb-4">
                         <span className="text-lg font-medium text-gray-600">Total a Pagar</span>
-                        <span className="text-3xl font-black text-gray-800">{currencySymbol} {calculateTotal()}</span>
+                        <span className="text-3xl font-black text-gray-800">{currencySymbol} {cartTotal.toFixed(2)}</span>
                     </div>
+
+                    {paymentMethod === 'efectivo' && cartTotal > 0 && (
+                        <div className="mb-6 space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <div>
+                                <label className="text-sm font-medium text-gray-600 block mb-1">Monto Recibido</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-2.5 text-gray-500 font-bold">{currencySymbol}</span>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min={cartTotal}
+                                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-lg"
+                                        value={amountReceived}
+                                        onChange={(e) => setAmountReceived(e.target.value)}
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                                <span className="text-sm font-bold text-gray-600">Vuelto</span>
+                                <span className={`text-2xl font-black ${receivedAmountNum >= cartTotal ? 'text-green-600' : 'text-red-500'}`}>
+                                    {currencySymbol} {changeAmount.toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
                     {(projectDetails?.status === 'suspended' && user.role !== 'superadmin') ? (
                         <div className="w-full bg-red-100 text-red-700 p-4 rounded-xl text-center font-bold">
                             Servicio Suspendido. Comuníquese con Soporte para Reactivar el Punto de Venta.
@@ -544,8 +578,8 @@ const POS = () => {
                     ) : (
                         <button
                             onClick={handleCheckout}
-                            disabled={cart.length === 0}
-                            className={`w-full py-3 xl:py-4 text-white text-base xl:text-lg font-bold rounded-xl flex items-center justify-center gap-2 transition ${cart.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 shadow-lg'}`}
+                            disabled={isCheckoutDisabled}
+                            className={`w-full py-3 xl:py-4 text-white text-base xl:text-lg font-bold rounded-xl flex items-center justify-center gap-2 transition ${isCheckoutDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 shadow-lg'}`}
                         >
                             <CreditCard className="w-6 h-6" /> Realizar Venta
                         </button>
@@ -638,8 +672,35 @@ const POS = () => {
                             </div>
                             <div className="flex justify-between items-center mb-4">
                                 <span className="font-medium text-gray-600">Total</span>
-                                <span className="text-2xl font-black text-gray-800">{currencySymbol} {calculateTotal()}</span>
+                                <span className="text-2xl font-black text-gray-800">{currencySymbol} {cartTotal.toFixed(2)}</span>
                             </div>
+
+                            {paymentMethod === 'efectivo' && cartTotal > 0 && (
+                                <div className="mb-4 space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-600 block mb-1">Monto Recibido</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-2 text-gray-500 font-bold text-sm">{currencySymbol}</span>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min={cartTotal}
+                                                className="w-full pl-8 pr-4 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-base"
+                                                value={amountReceived}
+                                                onChange={(e) => setAmountReceived(e.target.value)}
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                                        <span className="text-xs font-bold text-gray-600">Vuelto</span>
+                                        <span className={`text-xl font-black ${receivedAmountNum >= cartTotal ? 'text-green-600' : 'text-red-500'}`}>
+                                            {currencySymbol} {changeAmount.toFixed(2)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
                             {(projectDetails?.status === 'suspended' && user.role !== 'superadmin') ? (
                                 <div className="w-full bg-red-100 text-red-700 p-3 rounded-lg text-center font-bold text-sm">
                                     Servicio suspendido
@@ -650,8 +711,8 @@ const POS = () => {
                                         handleCheckout();
                                         setShowCart(false);
                                     }}
-                                    disabled={cart.length === 0}
-                                    className={`w-full py-3 text-white text-base font-bold rounded-lg flex items-center justify-center gap-2 transition ${cart.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                                    disabled={isCheckoutDisabled}
+                                    className={`w-full py-3 text-white text-base font-bold rounded-lg flex items-center justify-center gap-2 transition ${isCheckoutDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
                                 >
                                     <CreditCard className="w-5 h-5" /> Confirmar
                                 </button>
