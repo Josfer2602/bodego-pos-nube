@@ -314,8 +314,8 @@ const Inventory = () => {
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div className="w-full h-full flex flex-col">
+            <div className="flex-none flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Inventario</h1>
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                     <input type="file" accept=".xlsx, .xls" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
@@ -331,7 +331,7 @@ const Inventory = () => {
                 </div>
             </div>
 
-            <div className="bg-white p-4 border-x border-t border-gray-100 rounded-t-xl flex flex-col sm:flex-row justify-between items-center bg-gray-50/50 gap-4">
+            <div className="flex-none bg-white p-4 border-x border-t border-gray-100 rounded-t-xl flex flex-col sm:flex-row justify-between items-center bg-gray-50/50 gap-4">
                 <div className="relative w-full sm:w-72">
                     <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
                     <input
@@ -348,33 +348,34 @@ const Inventory = () => {
             </div>
 
             {/* Desktop Table */}
-            <div className="hidden md:block bg-white rounded-b-xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-gray-50 border-b">
-                            <th className="p-4 font-semibold text-gray-600 cursor-pointer hover:text-blue-600 transition" onClick={() => handleSort('name')}>
+            <div className="hidden md:flex flex-1 min-h-0 flex-col bg-white rounded-b-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="sticky top-0 z-10 bg-gray-100 shadow-sm">
+                            <tr>
+                                <th className="p-5 font-semibold text-gray-700 cursor-pointer hover:text-blue-600 transition border-b border-gray-200" onClick={() => handleSort('name')}>
                                 <div className="flex items-center">Nombre <SortIcon columnKey="name" /></div>
                             </th>
-                            <th className="p-4 font-semibold text-gray-600">Códigos</th>
-                            <th className="p-4 font-semibold text-gray-600 cursor-pointer hover:text-blue-600 transition" onClick={() => handleSort('cost')}>
-                                <div className="flex items-center">Costo Adq. <SortIcon columnKey="cost" /></div>
-                            </th>
-                            <th className="p-4 font-semibold text-gray-600 cursor-pointer hover:text-blue-600 transition" onClick={() => handleSort('margin')}>
-                                <div className="flex items-center">Margen (%) <SortIcon columnKey="margin" /></div>
-                            </th>
-                            <th className="p-4 font-semibold text-gray-600 cursor-pointer hover:text-blue-600 transition" onClick={() => handleSort('price')}>
-                                <div className="flex items-center">Precio Público <SortIcon columnKey="price" /></div>
-                            </th>
-                            <th className="p-4 font-semibold text-gray-600 cursor-pointer hover:text-blue-600 transition" onClick={() => handleSort('stock')}>
-                                <div className="flex items-center">Stock <SortIcon columnKey="stock" /></div>
-                            </th>
-                            <th className="p-4 font-semibold text-gray-600 cursor-pointer hover:text-blue-600 transition" onClick={() => handleSort('expiration_date')}>
-                                <div className="flex items-center">Vencimiento <SortIcon columnKey="expiration_date" /></div>
-                            </th>
-                            <th className="p-4 font-semibold text-gray-600 text-center">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                                <th className="p-5 font-semibold text-gray-700 border-b border-gray-200">Códigos</th>
+                                <th className="p-5 font-semibold text-gray-700 cursor-pointer hover:text-blue-600 transition border-b border-gray-200" onClick={() => handleSort('cost')}>
+                                    <div className="flex items-center">Costo Adq. <SortIcon columnKey="cost" /></div>
+                                </th>
+                                <th className="p-5 font-semibold text-gray-700 cursor-pointer hover:text-blue-600 transition border-b border-gray-200" onClick={() => handleSort('margin')}>
+                                    <div className="flex items-center">Margen (%) <SortIcon columnKey="margin" /></div>
+                                </th>
+                                <th className="p-5 font-semibold text-gray-700 cursor-pointer hover:text-blue-600 transition border-b border-gray-200" onClick={() => handleSort('price')}>
+                                    <div className="flex items-center">Precio Público <SortIcon columnKey="price" /></div>
+                                </th>
+                                <th className="p-5 font-semibold text-gray-700 cursor-pointer hover:text-blue-600 transition border-b border-gray-200" onClick={() => handleSort('stock')}>
+                                    <div className="flex items-center">Stock <SortIcon columnKey="stock" /></div>
+                                </th>
+                                <th className="p-5 font-semibold text-gray-700 cursor-pointer hover:text-blue-600 transition border-b border-gray-200" onClick={() => handleSort('expiration_date')}>
+                                    <div className="flex items-center">Vencimiento <SortIcon columnKey="expiration_date" /></div>
+                                </th>
+                                <th className="p-5 font-semibold text-gray-700 text-center border-b border-gray-200">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
                         {sortedProducts.map(product => {
                             const expStatus = getExpirationStatus(product.expiration_date);
                             return (
@@ -490,10 +491,11 @@ const Inventory = () => {
                         )}
                     </tbody>
                 </table>
+                </div>
             </div>
 
-            {/* Mobile Cards */}
-            <div className="md:hidden bg-white rounded-b-xl shadow-sm border border-gray-100 overflow-hidden">
+    {/* Mobile Cards (only visible on small screens) */}
+    <div className="md:hidden flex-1 overflow-y-auto space-y-4 mb-4 pb-16 custom-scrollbar">
                 <div className="divide-y divide-gray-100">
                     {sortedProducts.map(product => {
                         const expStatus = getExpirationStatus(product.expiration_date);
@@ -571,8 +573,8 @@ const Inventory = () => {
             </div>
 
             {showModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+                    <div className="glass-panel bg-white/95 rounded-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
                         <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
                             <h2 className="text-xl font-bold m-0">{editingId ? 'Editar Producto' : 'Nuevo Producto'}</h2>
                             <button onClick={resetModal} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
@@ -596,7 +598,7 @@ const Inventory = () => {
 
                         {/* Barcode Lookup Section */}
                         {inputMode === 'barcode' && (
-                            <div className="px-6 pt-5">
+                            <div className="p-6">
                                 <label className="text-sm font-semibold text-gray-700 block mb-2">Escanea o escribe el código:</label>
                                 <div className="flex gap-2">
                                     <input

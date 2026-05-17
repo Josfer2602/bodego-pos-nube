@@ -41,7 +41,7 @@ const History = () => {
     const totalRevenue = salesList.reduce((sum, sale) => sum + sale.total, 0);
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+        <div className="p-4 md:p-8 w-full h-full space-y-6">
             <div>
                 <h2 className="text-2xl font-bold text-slate-800">Historial de Ventas</h2>
                 <p className="text-slate-500 text-sm mt-1">Revisa todas las transacciones realizadas.</p>

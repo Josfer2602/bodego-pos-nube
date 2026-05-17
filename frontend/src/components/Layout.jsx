@@ -24,7 +24,7 @@ const Layout = ({ children }) => {
     const themeColor = projectDetails?.theme_color || '#111827';
 
     return (
-        <div className="min-h-screen flex flex-col md:flex-row bg-gray-100">
+        <div className="h-screen w-full flex flex-col md:flex-row bg-gray-100 overflow-hidden">
             <Toaster position="top-center" richColors closeButton />
             {/* Mobile top bar */}
             <div className="md:hidden flex items-center justify-between bg-white/80 backdrop-blur-md p-3 shadow-sm border-b sticky top-0 z-50">
@@ -54,9 +54,13 @@ const Layout = ({ children }) => {
 
             {/* Sidebar Inyectando Color Dinámico como Style inline */}
             <div 
-                className={`fixed inset-y-0 left-0 z-50 w-64 transform ${open ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out md:translate-x-0 md:relative md:inset-auto md:w-20 xl:w-64 text-white shadow-2xl md:shadow-none flex flex-col h-screen md:h-auto`} 
-                style={{ backgroundColor: themeColor }}
+                className={`fixed inset-y-0 left-0 z-50 w-64 transform ${open ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out md:translate-x-0 md:relative md:inset-auto md:w-20 xl:w-64 text-white shadow-2xl md:shadow-none flex flex-col h-screen md:h-auto overflow-hidden`} 
+                style={{ 
+                    background: `linear-gradient(180deg, ${themeColor} 0%, rgba(0,0,0,0.8) 150%)`
+                }}
             >
+                {/* Glow decorativo interior */}
+                <div className="absolute top-0 inset-x-0 h-32 bg-white/10 blur-3xl rounded-full -translate-y-1/2 pointer-events-none"></div>
                 <div className="p-4 xl:p-6 flex flex-col items-center">
                     <h1 className="text-xl xl:text-2xl font-bold mb-2 flex flex-col items-center justify-center text-center">
                         {/* Renderizar Logo o Texto */}
@@ -81,30 +85,30 @@ const Layout = ({ children }) => {
                 <nav className="flex-1 mt-4 xl:mt-6 overflow-x-hidden">
                     {location.pathname.startsWith('/admin') ? (
                         <>
-                            <Link title="Gestión Global" to="/admin" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/admin' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
-                                <Shield className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Gestión Global</span>
+                            <Link title="Gestión Global" to="/admin" className={`group flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 ${location.pathname === '/admin' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                                <Shield className="w-5 h-5 xl:mr-3 group-hover:scale-110 transition-transform" /> <span className="hidden xl:block group-hover:translate-x-1 transition-transform">Gestión Global</span>
                             </Link>
                         </>
                     ) : (
                         <>
-                            <Link title="Punto de Venta" to="/" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
-                                <ShoppingCart className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Punto de Venta</span>
+                            <Link title="Punto de Venta" to="/" className={`group flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 ${location.pathname === '/' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                                <ShoppingCart className="w-5 h-5 xl:mr-3 group-hover:scale-110 transition-transform" /> <span className="hidden xl:block group-hover:translate-x-1 transition-transform">Punto de Venta</span>
                             </Link>
-                            <Link title="Dashboard" to="/dashboard" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/dashboard' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
-                                <BarChart2 className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Dashboard</span>
+                            <Link title="Dashboard" to="/dashboard" className={`group flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 ${location.pathname === '/dashboard' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                                <BarChart2 className="w-5 h-5 xl:mr-3 group-hover:scale-110 transition-transform" /> <span className="hidden xl:block group-hover:translate-x-1 transition-transform">Dashboard</span>
                             </Link>
-                            <Link title="Inventario" to="/inventory" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/inventory' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
-                                <Package className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Inventario</span>
+                            <Link title="Inventario" to="/inventory" className={`group flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 ${location.pathname === '/inventory' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                                <Package className="w-5 h-5 xl:mr-3 group-hover:scale-110 transition-transform" /> <span className="hidden xl:block group-hover:translate-x-1 transition-transform">Inventario</span>
                             </Link>
-                            <Link title="Promociones" to="/promotions" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/promotions' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
-                                <Tag className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Promociones</span>
+                            <Link title="Promociones" to="/promotions" className={`group flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 ${location.pathname === '/promotions' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                                <Tag className="w-5 h-5 xl:mr-3 group-hover:scale-110 transition-transform" /> <span className="hidden xl:block group-hover:translate-x-1 transition-transform">Promociones</span>
                             </Link>
-                            <Link title="Historial" to="/history" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/history' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
-                                <Clock className="w-5 h-5 xl:mr-3" /> <span className="hidden xl:block">Historial</span>
+                            <Link title="Historial" to="/history" className={`group flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 ${location.pathname === '/history' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                                <Clock className="w-5 h-5 xl:mr-3 group-hover:scale-110 transition-transform" /> <span className="hidden xl:block group-hover:translate-x-1 transition-transform">Historial</span>
                             </Link>
                             {(user?.role === 'superadmin' || user?.role === 'admin') && (
-                                <Link title="Auditoría Cajas" to="/cash-history" className={`flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 hover:translate-x-1 ${location.pathname === '/cash-history' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
-                                    <Wallet className="w-5 h-5 xl:mr-3 text-red-300" /> <span className="hidden xl:block text-red-200">Auditoría Cajas</span>
+                                <Link title="Auditoría Cajas" to="/cash-history" className={`group flex items-center justify-center xl:justify-start px-2 xl:px-6 py-3 hover:bg-white/10 transition-all duration-200 ${location.pathname === '/cash-history' ? 'bg-white/20 border-l-4 border-white' : ''}`}>
+                                    <Wallet className="w-5 h-5 xl:mr-3 text-red-300 group-hover:scale-110 transition-transform" /> <span className="hidden xl:block text-red-200 group-hover:translate-x-1 transition-transform">Auditoría Cajas</span>
                                 </Link>
                             )}
                         </>
@@ -135,8 +139,10 @@ const Layout = ({ children }) => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-auto md:p-4 xl:p-6 p-4">
-                {children}
+            <div className="flex-1 overflow-hidden flex flex-col bg-gray-100">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden md:p-4 xl:p-6 p-4 flex flex-col relative custom-scrollbar">
+                    {children}
+                </div>
             </div>
         </div>
     );

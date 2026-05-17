@@ -482,7 +482,7 @@ const POS = () => {
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar my-4 space-y-3">
                     {cart.map((item) => (
-                        <div key={item.uniqueId} className="flex flex-col border p-3 rounded-lg bg-gray-50 hover:bg-white transition relative overflow-hidden">
+                        <div key={item.uniqueId} className="flex flex-col border p-3 rounded-lg bg-gray-50 hover:bg-white transition relative overflow-hidden animate-slide-in-right">
                             {item.has_discount && <div className="absolute top-0 right-0 bg-red-100 text-red-700 text-[9px] font-bold px-2 py-1 flex items-center gap-1"><Tag className="w-3 h-3" /> Promoción Aplicada</div>}
 
                             <div className="flex justify-between items-start mb-2 pr-20">
@@ -492,12 +492,12 @@ const POS = () => {
                             <div className="flex justify-between items-center mt-1">
                                 <span className="font-black text-blue-600 text-lg">{currencySymbol} {(item.price * item.quantity).toFixed(2)}</span>
                                 <div className="flex items-center gap-2 bg-white rounded-lg border p-1 shadow-sm">
-                                    <button onClick={() => updateQuantity(item.uniqueId, -1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
-                                        <Minus className="w-4 h-4" />
+                                    <button onClick={() => updateQuantity(item.uniqueId, -1)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 active:scale-95 transition-transform">
+                                        <Minus className="w-5 h-5" />
                                     </button>
                                     <span className="w-8 text-center font-bold text-gray-700">{item.quantity}</span>
-                                    <button onClick={() => updateQuantity(item.uniqueId, 1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
-                                        <Plus className="w-4 h-4" />
+                                    <button onClick={() => updateQuantity(item.uniqueId, 1)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 active:scale-95 transition-transform">
+                                        <Plus className="w-5 h-5" />
                                     </button>
                                 </div>
                             </div>
@@ -548,7 +548,13 @@ const POS = () => {
                     {paymentMethod === 'efectivo' && cartTotal > 0 && (
                         <div className="mb-6 space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
                             <div>
-                                <label className="text-sm font-medium text-gray-600 block mb-1">Monto Recibido</label>
+                                <label className="text-sm font-medium text-gray-600 block mb-2">Monto Recibido</label>
+                                <div className="flex gap-2 mb-3">
+                                    <button onClick={() => setAmountReceived(cartTotal.toString())} className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-50 active:scale-95 transition-transform focus:border-blue-500 focus:text-blue-700">Exacto</button>
+                                    <button onClick={() => setAmountReceived('20')} className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-50 active:scale-95 transition-transform focus:border-blue-500 focus:text-blue-700">20</button>
+                                    <button onClick={() => setAmountReceived('50')} className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-50 active:scale-95 transition-transform focus:border-blue-500 focus:text-blue-700">50</button>
+                                    <button onClick={() => setAmountReceived('100')} className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-50 active:scale-95 transition-transform focus:border-blue-500 focus:text-blue-700">100</button>
+                                </div>
                                 <div className="relative">
                                     <span className="absolute left-3 top-2.5 text-gray-500 font-bold">{currencySymbol}</span>
                                     <input
@@ -579,7 +585,7 @@ const POS = () => {
                         <button
                             onClick={handleCheckout}
                             disabled={isCheckoutDisabled}
-                            className={`w-full py-3 xl:py-4 text-white text-base xl:text-lg font-bold rounded-xl flex items-center justify-center gap-2 transition ${isCheckoutDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 shadow-lg'}`}
+                            className={`w-full py-3 xl:py-4 text-white text-base xl:text-lg font-bold rounded-xl flex items-center justify-center gap-2 transition ${isCheckoutDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg animate-subtle-pulse border border-green-400'}`}
                         >
                             <CreditCard className="w-6 h-6" /> Realizar Venta
                         </button>
@@ -612,7 +618,7 @@ const POS = () => {
 
                         <div className="flex-1 overflow-y-auto p-4 space-y-3">
                             {cart.map((item) => (
-                                <div key={item.uniqueId} className="flex flex-col border p-3 rounded-lg bg-gray-50 relative overflow-hidden">
+                                <div key={item.uniqueId} className="flex flex-col border p-3 rounded-lg bg-gray-50 relative overflow-hidden animate-slide-in-right">
                                     {item.has_discount && <div className="absolute top-0 right-0 bg-red-100 text-red-700 text-[9px] font-bold px-2 py-1 flex items-center gap-1"><Tag className="w-3 h-3" /> Promoción</div>}
 
                                     <div className="flex justify-between items-start mb-2 pr-16">
@@ -621,13 +627,13 @@ const POS = () => {
 
                                     <div className="flex justify-between items-center mt-1">
                                         <span className="font-black text-blue-600 text-base">{currencySymbol} {(item.price * item.quantity).toFixed(2)}</span>
-                                        <div className="flex items-center gap-1 bg-white rounded border p-1">
-                                            <button onClick={() => updateQuantity(item.uniqueId, -1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
-                                                <Minus className="w-3 h-3" />
+                                        <div className="flex items-center gap-1 bg-white rounded-lg border p-1">
+                                            <button onClick={() => updateQuantity(item.uniqueId, -1)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 active:scale-95 transition-transform">
+                                                <Minus className="w-4 h-4" />
                                             </button>
                                             <span className="w-6 text-center font-bold text-gray-700 text-sm">{item.quantity}</span>
-                                            <button onClick={() => updateQuantity(item.uniqueId, 1)} className="p-1 hover:bg-gray-100 rounded text-gray-600">
-                                                <Plus className="w-3 h-3" />
+                                            <button onClick={() => updateQuantity(item.uniqueId, 1)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 active:scale-95 transition-transform">
+                                                <Plus className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </div>
@@ -678,7 +684,13 @@ const POS = () => {
                             {paymentMethod === 'efectivo' && cartTotal > 0 && (
                                 <div className="mb-4 space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
                                     <div>
-                                        <label className="text-xs font-medium text-gray-600 block mb-1">Monto Recibido</label>
+                                        <label className="text-xs font-medium text-gray-600 block mb-2">Monto Recibido</label>
+                                        <div className="flex gap-2 mb-2">
+                                            <button onClick={() => setAmountReceived(cartTotal.toString())} className="flex-1 bg-white border border-gray-300 text-gray-700 py-1.5 rounded-lg text-xs font-bold shadow-sm active:scale-95 transition-transform">Exacto</button>
+                                            <button onClick={() => setAmountReceived('20')} className="flex-1 bg-white border border-gray-300 text-gray-700 py-1.5 rounded-lg text-xs font-bold shadow-sm active:scale-95 transition-transform">20</button>
+                                            <button onClick={() => setAmountReceived('50')} className="flex-1 bg-white border border-gray-300 text-gray-700 py-1.5 rounded-lg text-xs font-bold shadow-sm active:scale-95 transition-transform">50</button>
+                                            <button onClick={() => setAmountReceived('100')} className="flex-1 bg-white border border-gray-300 text-gray-700 py-1.5 rounded-lg text-xs font-bold shadow-sm active:scale-95 transition-transform">100</button>
+                                        </div>
                                         <div className="relative">
                                             <span className="absolute left-3 top-2 text-gray-500 font-bold text-sm">{currencySymbol}</span>
                                             <input
@@ -712,7 +724,7 @@ const POS = () => {
                                         setShowCart(false);
                                     }}
                                     disabled={isCheckoutDisabled}
-                                    className={`w-full py-3 text-white text-base font-bold rounded-lg flex items-center justify-center gap-2 transition ${isCheckoutDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                                    className={`w-full py-3 text-white text-base font-bold rounded-lg flex items-center justify-center gap-2 transition ${isCheckoutDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 animate-subtle-pulse border border-green-400'}`}
                                 >
                                     <CreditCard className="w-5 h-5" /> Confirmar
                                 </button>

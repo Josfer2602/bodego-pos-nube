@@ -314,7 +314,7 @@ const AdminPanel = () => {
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 md:p-8 w-full h-full space-y-8">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                     <Shield className="w-8 h-8 text-blue-600" />
@@ -343,11 +343,11 @@ const AdminPanel = () => {
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)}></div>
 
                     {/* Modal Content */}
-                    <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl ring-1 ring-black/5 relative overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="glass-panel bg-white/95 w-full max-w-4xl rounded-3xl shadow-2xl ring-1 ring-black/5 relative overflow-hidden animate-fade-in-up">
                         <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50 rounded-full -mr-24 -mt-24 opacity-50"></div>
 
-                        <div className="p-4 md:p-8 relative">
-                            <div className="flex justify-between items-center mb-8">
+                        <div className="p-4 md:p-6 relative">
+                            <div className="flex justify-between items-center mb-5">
                                 <h2 className="text-2xl font-bold flex items-center gap-3 text-gray-800">
                                     {editingProject ? (
                                         <><Settings className="w-7 h-7 text-amber-500" /> Configuración de Sucursal</>
@@ -363,103 +363,188 @@ const AdminPanel = () => {
                                 </button>
                             </div>
 
-                            <form onSubmit={editingProject ? handleCreateProject : handleUnifiedSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                {/* Columna 1: Tienda */}
-                                <div className="space-y-5">
-                                    <h3 className="text-xs font-black uppercase tracking-widest text-blue-600/60 pb-2 border-b font-mono">1. Local & Negocio</h3>
+                            {/* Banner de Edición */}
+                            {editingProject && (
+                                <div className="bg-amber-50 text-amber-800 px-4 py-2.5 rounded-xl mb-4 flex items-center gap-3 border border-amber-200">
+                                    <Settings className="w-5 h-5 text-amber-500" />
+                                    <span className="text-sm">Editando sucursal: <b className="text-base">{editingProject.name}</b></span>
+                                </div>
+                            )}
 
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1">Nombre Comercial</label>
-                                        <input
-                                            className="w-full border-gray-200 border p-3 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all"
-                                            placeholder="Nombre de la tienda"
-                                            required
-                                            value={editingProject ? projectForm.name : unifiedForm.name}
-                                            onChange={e => editingProject ? setProjectForm({ ...projectForm, name: e.target.value }) : setUnifiedForm({ ...unifiedForm, name: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-bold text-gray-700 mb-1">Membresía</label>
-                                            <select
-                                                className="w-full border-gray-200 border p-3 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all bg-white"
-                                                value={editingProject ? projectForm.membership_type : unifiedForm.membership_type}
-                                                onChange={e => editingProject ? setProjectForm({ ...projectForm, membership_type: e.target.value }) : setUnifiedForm({ ...unifiedForm, membership_type: e.target.value })}
-                                            >
-                                                <option value="mensual">Mensual</option>
-                                                <option value="trimestral">Trimestral</option>
-                                                <option value="anual">Anual</option>
-                                                <option value="permanente">Permanente</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-gray-700 mb-1">Moneda</label>
-                                            <select
-                                                className="w-full border-gray-200 border p-3 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all bg-white"
-                                                value={editingProject ? projectForm.currency : unifiedForm.currency}
-                                                onChange={e => editingProject ? setProjectForm({ ...projectForm, currency: e.target.value }) : setUnifiedForm({ ...unifiedForm, currency: e.target.value })}
-                                            >
-                                                <option value="PEN">Soles (S/)</option>
-                                                <option value="USD">Dólares ($)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-bold text-gray-700 mb-1">Color de Tema</label>
-                                            <div className="flex items-center gap-3">
+                            <form onSubmit={editingProject ? handleCreateProject : handleUnifiedSubmit}>
+                                {editingProject ? (
+                                    <div className="space-y-3.5">
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-blue-600/60 pb-2 border-b font-mono">Detalles del Local</h3>
+                                        
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="sm:col-span-2">
+                                                <label className="block text-sm font-bold text-gray-700 mb-1">Nombre Comercial</label>
                                                 <input
-                                                    type="color"
-                                                    className="w-12 h-12 rounded-xl border-2 border-gray-100 cursor-pointer p-0 overflow-hidden shadow-sm"
-                                                    value={editingProject ? projectForm.theme_color : unifiedForm.theme_color}
-                                                    onChange={e => editingProject ? setProjectForm({ ...projectForm, theme_color: e.target.value }) : setUnifiedForm({ ...unifiedForm, theme_color: e.target.value })}
+                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                                                    placeholder="Nombre de la tienda"
+                                                    required
+                                                    value={projectForm.name}
+                                                    onChange={e => setProjectForm({ ...projectForm, name: e.target.value })}
                                                 />
-                                                <span className="text-xs font-mono text-gray-500 uppercase">{editingProject ? projectForm.theme_color : unifiedForm.theme_color}</span>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-gray-700 mb-2">Logo</label>
-                                            <div
-                                                onClick={() => { setSelectedProjectForLogo(editingProject ? editingProject.id : null); fileInputRef.current.click(); }}
-                                                className="group relative flex justify-center px-4 py-2 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all"
-                                            >
-                                                <div className="space-y-1 text-center">
-                                                    {(editingProject && editingProject.logo_url && !selectedProjectForLogo) || unifiedLogo ? (
-                                                        <div className="flex flex-col items-center">
-                                                            <ImageIcon className="h-5 w-5 text-blue-500 mb-1" />
-                                                            <p className="text-[10px] text-blue-600 font-black truncate max-w-[120px]">
-                                                                {unifiedLogo ? unifiedLogo.name : 'Imagen Actual'}
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            <ImageIcon className="mx-auto h-5 w-5 text-gray-300 group-hover:text-blue-400 transition-colors" />
-                                                            <p className="text-[10px] text-gray-400 font-bold uppercase">Subir</p>
-                                                        </>
-                                                    )}
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1">Membresía</label>
+                                                <select
+                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all bg-white"
+                                                    value={projectForm.membership_type}
+                                                    onChange={e => setProjectForm({ ...projectForm, membership_type: e.target.value })}
+                                                >
+                                                    <option value="mensual">Mensual</option>
+                                                    <option value="trimestral">Trimestral</option>
+                                                    <option value="anual">Anual</option>
+                                                    <option value="permanente">Permanente</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1">Moneda</label>
+                                                <select
+                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all bg-white"
+                                                    value={projectForm.currency}
+                                                    onChange={e => setProjectForm({ ...projectForm, currency: e.target.value })}
+                                                >
+                                                    <option value="PEN">Soles (S/)</option>
+                                                    <option value="USD">Dólares ($)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1">Color de Tema</label>
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="color"
+                                                        className="w-12 h-12 rounded-xl border-2 border-gray-100 cursor-pointer p-0 overflow-hidden shadow-sm"
+                                                        value={projectForm.theme_color}
+                                                        onChange={e => setProjectForm({ ...projectForm, theme_color: e.target.value })}
+                                                    />
+                                                    <span className="text-xs font-mono text-gray-500 uppercase">{projectForm.theme_color}</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2">Logo</label>
+                                                <div
+                                                    onClick={() => { setSelectedProjectForLogo(editingProject.id); fileInputRef.current.click(); }}
+                                                    className="group relative flex justify-center px-4 py-2 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all"
+                                                >
+                                                    <div className="space-y-1 text-center">
+                                                        {editingProject.logo_url && !selectedProjectForLogo ? (
+                                                            <div className="flex flex-col items-center">
+                                                                <ImageIcon className="h-5 w-5 text-blue-500 mb-1" />
+                                                                <p className="text-[10px] text-blue-600 font-black truncate max-w-[120px]">
+                                                                    Imagen Actual
+                                                                </p>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <ImageIcon className="mx-auto h-5 w-5 text-gray-300 group-hover:text-blue-400 transition-colors" />
+                                                                <p className="text-[10px] text-gray-400 font-bold uppercase">Subir</p>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                {/* Columna 2: Usuario */}
-                                <div className="space-y-5">
-                                    {editingProject ? (
-                                        <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100 flex flex-col items-center justify-center text-center space-y-3 h-full">
-                                            <Settings className="w-12 h-12 text-amber-300" />
-                                            <p className="text-sm text-amber-700 font-medium">Modo edición para: <br /><span className="text-lg font-bold">{editingProject.name}</span></p>
+                                        <div className="pt-2">
+                                            <button className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-bold shadow-md transition-all active:scale-[0.98]">
+                                                Guardar Cambios de Sucursal
+                                            </button>
                                         </div>
-                                    ) : (
-                                        <>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Columna 1: Tienda */}
+                                        <div className="space-y-3.5">
+                                            <h3 className="text-xs font-black uppercase tracking-widest text-blue-600/60 pb-2 border-b font-mono">1. Local & Negocio</h3>
+
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1">Nombre Comercial</label>
+                                                <input
+                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                                                    placeholder="Nombre de la tienda"
+                                                    required
+                                                    value={unifiedForm.name}
+                                                    onChange={e => setUnifiedForm({ ...unifiedForm, name: e.target.value })}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-1">Membresía</label>
+                                                    <select
+                                                        className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all bg-white"
+                                                        value={unifiedForm.membership_type}
+                                                        onChange={e => setUnifiedForm({ ...unifiedForm, membership_type: e.target.value })}
+                                                    >
+                                                        <option value="mensual">Mensual</option>
+                                                        <option value="trimestral">Trimestral</option>
+                                                        <option value="anual">Anual</option>
+                                                        <option value="permanente">Permanente</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-1">Moneda</label>
+                                                    <select
+                                                        className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all bg-white"
+                                                        value={unifiedForm.currency}
+                                                        onChange={e => setUnifiedForm({ ...unifiedForm, currency: e.target.value })}
+                                                    >
+                                                        <option value="PEN">Soles (S/)</option>
+                                                        <option value="USD">Dólares ($)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-1">Color de Tema</label>
+                                                    <div className="flex items-center gap-3">
+                                                        <input
+                                                            type="color"
+                                                            className="w-12 h-12 rounded-xl border-2 border-gray-100 cursor-pointer p-0 overflow-hidden shadow-sm"
+                                                            value={unifiedForm.theme_color}
+                                                            onChange={e => setUnifiedForm({ ...unifiedForm, theme_color: e.target.value })}
+                                                        />
+                                                        <span className="text-xs font-mono text-gray-500 uppercase">{unifiedForm.theme_color}</span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Logo</label>
+                                                    <div
+                                                        onClick={() => { setSelectedProjectForLogo(null); fileInputRef.current.click(); }}
+                                                        className="group relative flex justify-center px-4 py-2 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all"
+                                                    >
+                                                        <div className="space-y-1 text-center">
+                                                            {unifiedLogo ? (
+                                                                <div className="flex flex-col items-center">
+                                                                    <ImageIcon className="h-5 w-5 text-blue-500 mb-1" />
+                                                                    <p className="text-[10px] text-blue-600 font-black truncate max-w-[120px]">
+                                                                        {unifiedLogo.name}
+                                                                    </p>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <ImageIcon className="mx-auto h-5 w-5 text-gray-300 group-hover:text-blue-400 transition-colors" />
+                                                                    <p className="text-[10px] text-gray-400 font-bold uppercase">Subir</p>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Columna 2: Usuario */}
+                                        <div className="space-y-3.5">
                                             <h3 className="text-xs font-black uppercase tracking-widest text-green-600/60 pb-2 border-b font-mono">2. Administrador Maestro</h3>
 
                                             <div>
                                                 <label className="block text-sm font-bold text-gray-700 mb-1">Usuario</label>
                                                 <input
-                                                    className="w-full border-gray-200 border p-3 rounded-xl focus:ring-4 focus:ring-green-50 outline-none transition-all"
+                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-green-50 outline-none transition-all"
                                                     placeholder="admin_sucursal"
                                                     required
                                                     value={unifiedForm.username}
@@ -470,7 +555,7 @@ const AdminPanel = () => {
                                             <div>
                                                 <label className="block text-sm font-bold text-gray-700 mb-1">Contraseña</label>
                                                 <input
-                                                    className="w-full border-gray-200 border p-3 rounded-xl focus:ring-4 focus:ring-green-50 outline-none transition-all"
+                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-green-50 outline-none transition-all"
                                                     type="password"
                                                     required
                                                     value={unifiedForm.password}
@@ -481,7 +566,7 @@ const AdminPanel = () => {
                                             <div>
                                                 <label className="block text-sm font-bold text-gray-700 mb-1">Rol</label>
                                                 <select
-                                                    className="w-full border-gray-200 border p-3 rounded-xl focus:ring-4 focus:ring-green-50 outline-none transition-all bg-white"
+                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-green-50 outline-none transition-all bg-white"
                                                     value={unifiedForm.role}
                                                     onChange={e => setUnifiedForm({ ...unifiedForm, role: e.target.value })}
                                                 >
@@ -489,38 +574,38 @@ const AdminPanel = () => {
                                                     <option value="client">Vendedor</option>
                                                 </select>
                                             </div>
-                                        </>
-                                    )}
+                                        </div>
 
-                                    <div className="pt-4">
-                                        <button className={`w-full ${editingProject ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700'} text-white p-4 rounded-2xl font-bold shadow-lg transition-all transform active:scale-[0.98]`}>
-                                            {editingProject ? 'Guardar Cambios' : 'Crear Sucursal & Admin'}
-                                        </button>
+                                        <div className="md:col-span-2 pt-2">
+                                            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all transform active:scale-[0.98]">
+                                                Crear Sucursal & Admin
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </form>
 
                             {/* Usuarios: Solo se gestionan si la sucursal ya existe (Edición) */}
                             {editingProject && (
-                                <div className="mt-8 pt-8 border-t border-gray-100 flex flex-col">
-                                    <h3 className="text-sm font-bold uppercase tracking-widest text-purple-600/60 pb-4 border-b mb-6 font-mono flex items-center gap-2">
+                                <div className="mt-5 pt-5 border-t border-gray-100 flex flex-col">
+                                    <h3 className="text-sm font-bold uppercase tracking-widest text-purple-600/60 pb-3 border-b mb-4 font-mono flex items-center gap-2">
                                         <Users className="w-4 h-4" /> Personal de Sucursal
                                     </h3>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* Registrar nuevo usuario para esta tienda */}
-                                        <div className="space-y-4">
+                                        <div className="space-y-3">
                                             <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Añadir Nuevo Usuario</p>
-                                            <form onSubmit={handleCreateUser} className="space-y-3">
+                                            <form onSubmit={handleCreateUser} className="space-y-2.5">
                                                 <input
-                                                    className="w-full border border-gray-200 bg-white p-3 rounded-xl outline-none text-sm focus:ring-4 focus:ring-purple-50 transition-all"
+                                                    className="w-full border border-gray-200 bg-white px-3 py-2 rounded-xl outline-none text-sm focus:ring-4 focus:ring-purple-50 transition-all"
                                                     placeholder="Nombre de usuario"
                                                     value={userForm.username}
                                                     onChange={e => setUserForm({ ...userForm, username: e.target.value })}
                                                     required
                                                 />
                                                 <input
-                                                    className="w-full border border-gray-200 bg-white p-3 rounded-xl outline-none text-sm focus:ring-4 focus:ring-purple-50 transition-all"
+                                                    className="w-full border border-gray-200 bg-white px-3 py-2 rounded-xl outline-none text-sm focus:ring-4 focus:ring-purple-50 transition-all"
                                                     type="password"
                                                     placeholder="Contraseña"
                                                     value={userForm.password}
@@ -528,14 +613,14 @@ const AdminPanel = () => {
                                                     required
                                                 />
                                                 <select
-                                                    className="w-full border border-gray-200 bg-white p-3 rounded-xl outline-none text-sm"
+                                                    className="w-full border border-gray-200 bg-white px-3 py-2 rounded-xl outline-none text-sm"
                                                     value={userForm.role}
                                                     onChange={e => setUserForm({ ...userForm, role: e.target.value })}
                                                 >
                                                     <option value="client">Vendedor (Cajero)</option>
                                                     <option value="admin">Administrador Local</option>
                                                 </select>
-                                                <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm">
+                                                <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm">
                                                     <Plus className="w-4 h-4" /> Registrar Usuario
                                                 </button>
                                             </form>
@@ -543,7 +628,7 @@ const AdminPanel = () => {
 
                                         {/* Lista de usuarios con scroll */}
                                         <div className="flex flex-col h-full">
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-4">Usuarios Registrados</p>
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-3">Usuarios Registrados</p>
                                             <div className="border border-gray-100 rounded-2xl overflow-hidden bg-gray-50/50 flex-1 min-h-[150px]">
                                                 <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
                                                     {projectUsers.length === 0 ? (
