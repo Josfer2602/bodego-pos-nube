@@ -33,6 +33,11 @@ class ProjectBase(BaseModel):
     currency: Optional[str] = "PEN"
     theme_color: Optional[str] = "#2563eb"
     logo_url: Optional[str] = None
+    print_receipt: Optional[bool] = True
+    receipt_paper_width: Optional[str] = "80mm"
+    receipt_header: Optional[str] = "RUC: 10000000000\nAv. Principal 123\nTel: 987 654 321"
+    receipt_footer: Optional[str] = "¡Gracias por su compra!"
+    print_logo: Optional[bool] = True
 
 class ProjectCreate(ProjectBase):
     pass
@@ -44,6 +49,11 @@ class ProjectUpdate(BaseModel):
     membership_type: Optional[str] = None
     currency: Optional[str] = None
     theme_color: Optional[str] = None
+    print_receipt: Optional[bool] = None
+    receipt_paper_width: Optional[str] = None
+    receipt_header: Optional[str] = None
+    receipt_footer: Optional[str] = None
+    print_logo: Optional[bool] = None
 
 class ProjectResponse(ProjectBase):
     id: int
@@ -87,12 +97,21 @@ class ProductResponse(ProductBase):
     barcodes: List[BarcodeResponse] = []
     model_config = ConfigDict(from_attributes=True)
 
+class ProductShort(BaseModel):
+    id: int
+    name: str
+    price: float
+    model_config = ConfigDict(from_attributes=True)
+
 # --- Promotion Schemas ---
 class PromotionBase(BaseModel):
     name: str
-    discount_percentage: float
+    discount_percentage: Optional[float] = 0.0
     start_date: date
     end_date: date
+    promo_type: Optional[str] = "simple"
+    combo_price: Optional[float] = None
+    mix_match_qty: Optional[int] = None
 
 class PromotionCreate(PromotionBase):
     project_id: int
@@ -119,6 +138,7 @@ class SaleCreate(BaseModel):
 
 class SaleDetailResponse(SaleDetailBase):
     id: int
+    product: Optional[ProductShort] = None
     model_config = ConfigDict(from_attributes=True)
 
 class SaleResponse(BaseModel):

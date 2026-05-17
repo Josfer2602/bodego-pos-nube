@@ -15,6 +15,9 @@ const POS = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('efectivo'); // 'efectivo', 'yape', 'tarjeta_credito'
     const [amountReceived, setAmountReceived] = useState(''); // Monto recibido para vuelto
+    const [lastCompletedSale, setLastCompletedSale] = useState(null);
+
+    const searchInputRef = React.useRef(null);
 
     // Cash Session States
     const [cashSession, setCashSession] = useState(null);
@@ -33,6 +36,203 @@ const POS = () => {
             fetchCurrentSession();
         }
     }, [activeProject]);
+
+    // Autocargar foco del buscador y escuchar atajos globales
+    useEffect(() => {
+        if (searchInputRef.current) {
+            searchInputRef.current.focus();
+        }
+
+        const handleGlobalKeyDown = (e) => {
+            // Si el usuario está escribiendo en algún input/textarea que no sea el buscador, no interferimos
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+                if (e.key === 'Escape') {
+                    setSearchQuery('');
+                    document.activeElement.blur();
+                }
+                return;
+            }
+
+            // F8 para realizar cobro directo si hay elementos en el carrito
+            if (e.key === 'F8') {
+                e.preventDefault();
+                if (cart.length > 0) {
+                    handleCheckout();
+                } else {
+                    toast.error("El carrito está vacío");
+                }
+            }
+
+            // F9 para imprimir el ticket de la última venta
+            if (e.key === 'F9') {
+                e.preventDefault();
+                if (lastCompletedSale) {
+                    handlePrintTicket(lastCompletedSale);
+                } else {
+                    toast.error("No hay ninguna venta reciente para imprimir");
+                }
+            }
+
+            // F2 o cualquier caracter alfanumérico enfoca el buscador instantáneamente
+            if (e.key === 'F2') {
+                e.preventDefault();
+                if (searchInputRef.current) searchInputRef.current.focus();
+            } else if (e.key === 'Escape') {
+                setCart([]);
+                toast.info("Carrito limpiado");
+            } else if (/^[a-zA-Z0-9ñÑ]$/.test(e.key)) {
+                // Enfocar el buscador al comenzar a escribir si no hay inputs activos
+                if (searchInputRef.current) {
+                    searchInputRef.current.focus();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, [cart, paymentMethod, lastCompletedSale]);
+
+    const handlePrintTicket = (saleData) => {
+        if (!saleData) return;
+
+        // Si la sucursal tiene deshabilitada la impresión, no hacemos nada (o mostramos alerta suave)
+        if (projectDetails && projectDetails.print_receipt === false) {
+            toast.error("La sucursal tiene desactivada la impresión de tickets.");
+            return;
+        }
+
+        const widthSetting = projectDetails?.receipt_paper_width || '80mm';
+        const isNarrow = widthSetting === '58mm';
+        const printableWidth = isNarrow ? '48mm' : '72mm';
+        const bodyFontSize = isNarrow ? '9px' : '12px';
+        const headerFontSize = isNarrow ? '11px' : '15px';
+        const subtitleFontSize = isNarrow ? '8px' : '10px';
+
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow.document;
+        
+        // Formatear logo
+        let logoHtml = '';
+        if (projectDetails?.print_logo && projectDetails?.logo_url) {
+            logoHtml = `
+                <div class="text-center" style="margin-bottom: 8px;">
+                    <img src="${projectDetails.logo_url}" style="max-height: 40px; max-width: 100%; filter: grayscale(100%);" />
+                </div>
+            `;
+        }
+
+        const ticketHtml = `
+            <html>
+            <head>
+                <style>
+                    @page {
+                        size: ${widthSetting} auto;
+                        margin: 0;
+                    }
+                    body {
+                        font-family: 'Courier New', Courier, monospace;
+                        width: ${printableWidth};
+                        margin: 0;
+                        padding: ${isNarrow ? '2mm 1mm 6mm 1mm' : '4mm 4mm 10mm 4mm'};
+                        font-size: ${bodyFontSize};
+                        color: #000;
+                        line-height: 1.2;
+                    }
+                    .text-center { text-align: center; }
+                    .text-right { text-align: right; }
+                    .bold { font-weight: bold; }
+                    .divider { border-top: 1px dashed #000; margin: 4px 0; }
+                    .header { font-size: ${headerFontSize}; margin-bottom: 2px; text-transform: uppercase; }
+                    .subtitle { font-size: ${subtitleFontSize}; margin-bottom: 4px; color: #000; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { text-align: left; padding: 2px 0; }
+                    .total-row td { font-weight: bold; font-size: ${isNarrow ? '10px' : '13px'}; }
+                    .metadata { font-size: ${isNarrow ? '8px' : '10px'}; }
+                    .header-custom { white-space: pre-wrap; font-size: ${isNarrow ? '8px' : '10px'}; text-align: center; margin-bottom: 6px; }
+                </style>
+            </head>
+            <body>
+                ${logoHtml}
+                <div class="text-center bold header">${projectDetails?.name || 'VENTAS YA'}</div>
+                <div class="text-center subtitle">BOLETA DE VENTA</div>
+                
+                ${projectDetails?.receipt_header ? `
+                    <div class="header-custom">${projectDetails.receipt_header}</div>
+                ` : ''}
+                
+                <div class="divider"></div>
+                <div class="metadata"><b>Fecha:</b> ${new Date().toLocaleString()}</div>
+                <div class="metadata"><b>Pago:</b> ${saleData.paymentMethod.toUpperCase()}</div>
+                <div class="divider"></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 55%; font-size: ${isNarrow ? '8px' : '10px'};">Articulo</th>
+                            <th style="width: 15%; text-align: center; font-size: ${isNarrow ? '8px' : '10px'};">Cant</th>
+                            <th style="width: 30%; text-align: right; font-size: ${isNarrow ? '8px' : '10px'};">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${saleData.items.map(item => `
+                            <tr>
+                                <td style="font-size: ${isNarrow ? '8px' : '11px'};">${item.name}</td>
+                                <td style="text-align: center; font-size: ${isNarrow ? '8px' : '11px'};">${item.quantity}</td>
+                                <td style="text-align: right; font-size: ${isNarrow ? '8px' : '11px'};">${currencySymbol} ${(item.price * item.quantity).toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div class="divider"></div>
+                <table>
+                    <tr class="total-row">
+                        <td style="width: 60%; font-size: ${isNarrow ? '9px' : '12px'}; font-weight: bold;">TOTAL:</td>
+                        <td style="text-align: right; width: 40%; font-size: ${isNarrow ? '9px' : '12px'}; font-weight: bold;">${currencySymbol} ${saleData.total.toFixed(2)}</td>
+                    </tr>
+                    ${saleData.paymentMethod === 'efectivo' ? `
+                    <tr>
+                        <td style="font-size: ${isNarrow ? '8px' : '11px'};">Monto Recibido:</td>
+                        <td style="text-align: right; font-size: ${isNarrow ? '8px' : '11px'};">${currencySymbol} ${saleData.amountReceived.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td class="bold" style="font-size: ${isNarrow ? '8px' : '11px'};">Vuelto:</td>
+                        <td style="text-align: right; font-size: ${isNarrow ? '8px' : '11px'}; font-weight: bold;">${currencySymbol} ${saleData.changeAmount.toFixed(2)}</td>
+                    </tr>
+                    ` : ''}
+                </table>
+                
+                ${projectDetails?.receipt_footer ? `
+                    <div class="divider"></div>
+                    <div class="text-center italic" style="margin-top: 10px; font-size: ${isNarrow ? '8px' : '10px'}; font-weight: bold;">
+                        ${projectDetails.receipt_footer}
+                    </div>
+                ` : `
+                    <div class="divider"></div>
+                    <div class="text-center" style="margin-top: 10px; font-size: ${isNarrow ? '8px' : '10px'}; font-weight: bold;">
+                        ¡GRACIAS POR SU COMPRA!
+                    </div>
+                `}
+            </body>
+            </html>
+        `;
+
+        doc.open();
+        doc.write(ticketHtml);
+        doc.close();
+
+        setTimeout(() => {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            document.body.removeChild(iframe);
+        }, 300);
+    };
 
     const fetchCurrentSession = async () => {
         try {
@@ -124,7 +324,7 @@ const POS = () => {
         const today = new Date().toISOString().split('T')[0];
 
         promotions.forEach(promo => {
-            if (promo.start_date <= today && promo.end_date >= today) {
+            if (promo.start_date <= today && promo.end_date >= today && (!promo.promo_type || promo.promo_type === 'simple')) {
                 // Si este producto está en la lista de promocionados
                 if (promo.products.some(p => p.id === product.id)) {
                     if (promo.discount_percentage > maxDiscount) {
@@ -203,8 +403,92 @@ const POS = () => {
         setCart(cart.filter(item => item.uniqueId !== uniqueId));
     };
 
+    const getCartAnalysis = () => {
+        let subtotal = 0;
+        let discountDetails = [];
+        let finalItems = cart.map(item => ({ ...item, discountedPrice: item.price }));
+        const today = new Date().toISOString().split('T')[0];
+
+        // 1. Calcular subtotal inicial (con descuentos simples ya aplicados)
+        subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        // 2. Filtrar promociones activas
+        const activePromos = promotions.filter(promo => promo.start_date <= today && promo.end_date >= today);
+
+        // PROCESAR MIX & MATCH
+        const mixMatchPromos = activePromos.filter(promo => promo.promo_type === 'mix_match');
+        mixMatchPromos.forEach(promo => {
+            const promoProductIds = promo.products.map(p => p.id);
+            const eligibleCartItems = finalItems.filter(item => promoProductIds.includes(item.product_id));
+            const totalQty = eligibleCartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+            const minQty = promo.mix_match_qty || 2;
+            if (totalQty >= minQty) {
+                let savedAmount = 0;
+                eligibleCartItems.forEach(item => {
+                    const originalPrice = item.price;
+                    const discounted = originalPrice * (1 - (promo.discount_percentage / 100));
+                    savedAmount += (originalPrice - discounted) * item.quantity;
+                    item.discountedPrice = discounted;
+                });
+                if (savedAmount > 0) {
+                    discountDetails.push({
+                        name: `Mix & Match: ${promo.name} (-${promo.discount_percentage}%)`,
+                        amount: savedAmount
+                    });
+                }
+            }
+        });
+
+        // PROCESAR COMBOS
+        const comboPromos = activePromos.filter(promo => promo.promo_type === 'combo');
+        comboPromos.forEach(promo => {
+            const promoProductIds = promo.products.map(p => p.id);
+            const comboCartItems = finalItems.filter(item => promoProductIds.includes(item.product_id));
+
+            // Si todos los productos que forman el combo están en el carrito
+            if (comboCartItems.length === promoProductIds.length && promoProductIds.length > 0) {
+                // Cantidad de combos completados
+                const maxCombos = Math.min(...comboCartItems.map(item => item.quantity));
+                
+                if (maxCombos > 0) {
+                    const normalPriceOfOneCombo = comboCartItems.reduce((sum, item) => sum + item.price, 0);
+                    const promotionalPrice = promo.combo_price || 0;
+                    
+                    if (normalPriceOfOneCombo > promotionalPrice) {
+                        const savedPerCombo = normalPriceOfOneCombo - promotionalPrice;
+                        const totalSaved = savedPerCombo * maxCombos;
+
+                        // Distribuir el descuento de manera proporcional a cada unidad
+                        comboCartItems.forEach(item => {
+                            const ratio = item.price / normalPriceOfOneCombo;
+                            const discountPerUnit = (normalPriceOfOneCombo - promotionalPrice) * ratio;
+                            item.discountedPrice = Math.max(0, item.price - discountPerUnit);
+                        });
+
+                        discountDetails.push({
+                            name: `Combo: ${promo.name} (x${maxCombos})`,
+                            amount: totalSaved
+                        });
+                    }
+                }
+            }
+        });
+
+        const totalDiscount = discountDetails.reduce((sum, d) => sum + d.amount, 0);
+        const finalTotal = Math.max(0, subtotal - totalDiscount);
+
+        return {
+            subtotal,
+            discountDetails,
+            totalDiscount,
+            finalTotal,
+            finalItems
+        };
+    };
+
     const calculateTotal = () => {
-        return cart.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2);
+        return getCartAnalysis().finalTotal.toFixed(2);
     };
 
     const handleCheckout = async () => {
@@ -216,22 +500,34 @@ const POS = () => {
         }
 
         try {
+            const analysis = getCartAnalysis();
             const payload = {
                 project_id: activeProject,
-                items: cart.map(item => ({
+                items: analysis.finalItems.map(item => ({
                     product_id: item.product_id,
                     barcode_id: item.barcode_id,
                     quantity: item.quantity,
-                    price: item.price
+                    price: item.discountedPrice
                 })),
                 payment_method: paymentMethod
             };
 
             await api.post('/sales/', payload);
+            
+            // Respaldar datos para impresión de ticket
+            setLastCompletedSale({
+                items: analysis.finalItems.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.discountedPrice
+                })),
+                total: analysis.finalTotal,
+                paymentMethod: paymentMethod,
+                amountReceived: receivedAmountNum,
+                changeAmount: Math.max(0, receivedAmountNum - analysis.finalTotal)
+            });
+
             setShowSuccessModal(true);
-            setTimeout(() => {
-                setShowSuccessModal(false);
-            }, 3000);
             setCart([]);
             setAmountReceived('');
             fetchProducts();
@@ -392,6 +688,7 @@ const POS = () => {
                     </div>
                     <div className="relative w-64">
                         <input
+                            ref={searchInputRef}
                             type="text"
                             placeholder="Buscar producto..."
                             className="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
@@ -540,10 +837,28 @@ const POS = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="text-lg font-medium text-gray-600">Total a Pagar</span>
-                        <span className="text-3xl font-black text-gray-800">{currencySymbol} {cartTotal.toFixed(2)}</span>
-                    </div>
+                    {/* Detalles del Carrito / Descuentos de combos y mix & match */}
+                    {cart.length > 0 && (() => {
+                        const analysis = getCartAnalysis();
+                        return (
+                            <div className="space-y-1.5 border-b pb-3 mb-3 text-sm">
+                                <div className="flex justify-between text-gray-500">
+                                    <span>Subtotal</span>
+                                    <span>{currencySymbol} {analysis.subtotal.toFixed(2)}</span>
+                                </div>
+                                {analysis.discountDetails.map((disc, idx) => (
+                                    <div key={idx} className="flex justify-between text-emerald-600 font-semibold animate-pulse">
+                                        <span>{disc.name}</span>
+                                        <span>-{currencySymbol} {disc.amount.toFixed(2)}</span>
+                                    </div>
+                                ))}
+                                <div className="flex justify-between items-center pt-1">
+                                    <span className="text-base font-bold text-gray-700">Total a Pagar</span>
+                                    <span className="text-3xl font-black text-gray-900">{currencySymbol} {analysis.finalTotal.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {paymentMethod === 'efectivo' && cartTotal > 0 && (
                         <div className="mb-6 space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
@@ -676,10 +991,28 @@ const POS = () => {
                                     </button>
                                 </div>
                             </div>
-                            <div className="flex justify-between items-center mb-4">
-                                <span className="font-medium text-gray-600">Total</span>
-                                <span className="text-2xl font-black text-gray-800">{currencySymbol} {cartTotal.toFixed(2)}</span>
-                            </div>
+                            {/* Detalles del Carrito / Descuentos de combos y mix & match */}
+                            {cart.length > 0 && (() => {
+                                const analysis = getCartAnalysis();
+                                return (
+                                    <div className="space-y-1.5 border-b pb-2.5 mb-2.5 text-xs">
+                                        <div className="flex justify-between text-gray-500">
+                                            <span>Subtotal</span>
+                                            <span>{currencySymbol} {analysis.subtotal.toFixed(2)}</span>
+                                        </div>
+                                        {analysis.discountDetails.map((disc, idx) => (
+                                            <div key={idx} className="flex justify-between text-emerald-600 font-semibold animate-pulse">
+                                                <span>{disc.name}</span>
+                                                <span>-{currencySymbol} {disc.amount.toFixed(2)}</span>
+                                            </div>
+                                        ))}
+                                        <div className="flex justify-between items-center pt-1">
+                                            <span className="text-xs font-bold text-gray-700">Total a Pagar</span>
+                                            <span className="text-2xl font-black text-gray-900">{currencySymbol} {analysis.finalTotal.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             {paymentMethod === 'efectivo' && cartTotal > 0 && (
                                 <div className="mb-4 space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
@@ -745,12 +1078,25 @@ const POS = () => {
                         </div>
                         <h2 className="text-2xl font-black text-gray-800 mb-2">¡Venta Exitosa!</h2>
                         <p className="text-gray-500 mb-6 font-medium">El pago ha sido procesado correctamente.</p>
-                        <button
-                            onClick={() => setShowSuccessModal(false)}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition"
-                        >
-                            Cerrar
-                        </button>
+                        <div className="flex flex-col gap-2 w-full">
+                            {projectDetails?.print_receipt !== false && (
+                                <button
+                                    onClick={() => handlePrintTicket(lastCompletedSale)}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-md"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                    Imprimir Ticket (F9)
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setShowSuccessModal(false)}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

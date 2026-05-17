@@ -13,7 +13,18 @@ const AdminPanel = () => {
     const [selectedProjectId, setSelectedProjectId] = useState(null); // project in focus
 
     // Formularios
-    const [projectForm, setProjectForm] = useState({ name: '', description: '', currency: 'PEN', theme_color: '#2563eb', membership_type: 'mensual' });
+    const [projectForm, setProjectForm] = useState({
+        name: '',
+        description: '',
+        currency: 'PEN',
+        theme_color: '#2563eb',
+        membership_type: 'mensual',
+        print_receipt: true,
+        receipt_paper_width: '80mm',
+        receipt_header: "RUC: 10000000000\nAv. Principal 123\nTel: 987 654 321",
+        receipt_footer: "¡Gracias por su compra!",
+        print_logo: true
+    });
     const [editingProject, setEditingProject] = useState(null);
     const [userForm, setUserForm] = useState({ username: '', password: '', role: 'client' });
     const [assignForm, setAssignForm] = useState({ user_id: '', project_id: '' });
@@ -67,7 +78,12 @@ const AdminPanel = () => {
             description: p.description || '',
             currency: p.currency,
             theme_color: p.theme_color,
-            membership_type: p.membership_type || 'mensual'
+            membership_type: p.membership_type || 'mensual',
+            print_receipt: p.print_receipt !== undefined ? p.print_receipt : true,
+            receipt_paper_width: p.receipt_paper_width || '80mm',
+            receipt_header: p.receipt_header || "RUC: 10000000000\nAv. Principal 123\nTel: 987 654 321",
+            receipt_footer: p.receipt_footer || "¡Gracias por su compra!",
+            print_logo: p.print_logo !== undefined ? p.print_logo : true
         });
         setAssignForm({ user_id: '', project_id: String(p.id) });
         setUserForm({ username: '', password: '', role: 'client' });
@@ -373,85 +389,238 @@ const AdminPanel = () => {
 
                             <form onSubmit={editingProject ? handleCreateProject : handleUnifiedSubmit}>
                                 {editingProject ? (
-                                    <div className="space-y-3.5">
-                                        <h3 className="text-xs font-black uppercase tracking-widest text-blue-600/60 pb-2 border-b font-mono">Detalles del Local</h3>
-                                        
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div className="sm:col-span-2">
-                                                <label className="block text-sm font-bold text-gray-700 mb-1">Nombre Comercial</label>
-                                                <input
-                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all"
-                                                    placeholder="Nombre de la tienda"
-                                                    required
-                                                    value={projectForm.name}
-                                                    onChange={e => setProjectForm({ ...projectForm, name: e.target.value })}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-bold text-gray-700 mb-1">Membresía</label>
-                                                <select
-                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all bg-white"
-                                                    value={projectForm.membership_type}
-                                                    onChange={e => setProjectForm({ ...projectForm, membership_type: e.target.value })}
-                                                >
-                                                    <option value="mensual">Mensual</option>
-                                                    <option value="trimestral">Trimestral</option>
-                                                    <option value="anual">Anual</option>
-                                                    <option value="permanente">Permanente</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-bold text-gray-700 mb-1">Moneda</label>
-                                                <select
-                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all bg-white"
-                                                    value={projectForm.currency}
-                                                    onChange={e => setProjectForm({ ...projectForm, currency: e.target.value })}
-                                                >
-                                                    <option value="PEN">Soles (S/)</option>
-                                                    <option value="USD">Dólares ($)</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-bold text-gray-700 mb-1">Color de Tema</label>
-                                                <div className="flex items-center gap-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                                        {/* Columna Izquierda: Formulario (Detalles + Ticket settings) */}
+                                        <div className="md:col-span-3 space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                                            <h3 className="text-xs font-black uppercase tracking-widest text-blue-600/60 pb-2 border-b font-mono">Detalles del Local</h3>
+                                            
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="sm:col-span-2">
+                                                    <label className="block text-sm font-bold text-gray-700 mb-1">Nombre Comercial</label>
                                                     <input
-                                                        type="color"
-                                                        className="w-12 h-12 rounded-xl border-2 border-gray-100 cursor-pointer p-0 overflow-hidden shadow-sm"
-                                                        value={projectForm.theme_color}
-                                                        onChange={e => setProjectForm({ ...projectForm, theme_color: e.target.value })}
+                                                        className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                                                        placeholder="Nombre de la tienda"
+                                                        required
+                                                        value={projectForm.name}
+                                                        onChange={e => setProjectForm({ ...projectForm, name: e.target.value })}
                                                     />
-                                                    <span className="text-xs font-mono text-gray-500 uppercase">{projectForm.theme_color}</span>
                                                 </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-bold text-gray-700 mb-2">Logo</label>
-                                                <div
-                                                    onClick={() => { setSelectedProjectForLogo(editingProject.id); fileInputRef.current.click(); }}
-                                                    className="group relative flex justify-center px-4 py-2 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all"
-                                                >
-                                                    <div className="space-y-1 text-center">
-                                                        {editingProject.logo_url && !selectedProjectForLogo ? (
-                                                            <div className="flex flex-col items-center">
-                                                                <ImageIcon className="h-5 w-5 text-blue-500 mb-1" />
-                                                                <p className="text-[10px] text-blue-600 font-black truncate max-w-[120px]">
-                                                                    Imagen Actual
-                                                                </p>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                <ImageIcon className="mx-auto h-5 w-5 text-gray-300 group-hover:text-blue-400 transition-colors" />
-                                                                <p className="text-[10px] text-gray-400 font-bold uppercase">Subir</p>
-                                                            </>
-                                                        )}
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-1">Membresía</label>
+                                                    <select
+                                                        className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all bg-white font-semibold"
+                                                        value={projectForm.membership_type}
+                                                        onChange={e => setProjectForm({ ...projectForm, membership_type: e.target.value })}
+                                                    >
+                                                        <option value="mensual">Mensual</option>
+                                                        <option value="trimestral">Trimestral</option>
+                                                        <option value="anual">Anual</option>
+                                                        <option value="permanente">Permanente</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-1">Moneda</label>
+                                                    <select
+                                                        className="w-full border-gray-200 border px-3 py-2 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all bg-white font-semibold"
+                                                        value={projectForm.currency}
+                                                        onChange={e => setProjectForm({ ...projectForm, currency: e.target.value })}
+                                                    >
+                                                        <option value="PEN">Soles (S/)</option>
+                                                        <option value="USD">Dólares ($)</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-1">Color de Tema</label>
+                                                    <div className="flex items-center gap-3">
+                                                        <input
+                                                            type="color"
+                                                            className="w-10 h-10 rounded-xl border cursor-pointer p-0 overflow-hidden"
+                                                            value={projectForm.theme_color}
+                                                            onChange={e => setProjectForm({ ...projectForm, theme_color: e.target.value })}
+                                                        />
+                                                        <span className="text-xs font-mono text-gray-500 uppercase">{projectForm.theme_color}</span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-1">Logo Comercial</label>
+                                                    <div
+                                                        onClick={() => { setSelectedProjectForLogo(editingProject.id); fileInputRef.current.click(); }}
+                                                        className="group relative flex justify-center px-4 py-2 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all"
+                                                    >
+                                                        <div className="space-y-1 text-center">
+                                                            {editingProject.logo_url && !selectedProjectForLogo ? (
+                                                                <div className="flex flex-col items-center">
+                                                                    <ImageIcon className="h-5 w-5 text-blue-500 mb-0.5" />
+                                                                    <span className="text-[10px] text-blue-600 font-bold truncate max-w-[120px]">Editar Logo</span>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <ImageIcon className="mx-auto h-5 w-5 text-gray-300 group-hover:text-blue-400 transition-colors" />
+                                                                    <span className="text-[10px] text-gray-400 font-bold uppercase">Subir</span>
+                                                                </>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            {/* CONFIGURACIÓN Y DISEÑO DE TICKET */}
+                                            <div className="pt-4 border-t border-gray-100 space-y-4">
+                                                <h3 className="text-xs font-black uppercase tracking-widest text-emerald-600 pb-2 border-b font-mono flex items-center gap-2">
+                                                    🎨 Diseño y Configuración de Ticket
+                                                </h3>
+
+                                                {/* Switch Impresión */}
+                                                <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-150">
+                                                    <div>
+                                                        <span className="block text-sm font-bold text-gray-700">Imprimir boletas</span>
+                                                        <span className="block text-xs text-gray-400">Ofrecer ticket al completar venta</span>
+                                                    </div>
+                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="sr-only peer"
+                                                            checked={projectForm.print_receipt}
+                                                            onChange={e => setProjectForm({ ...projectForm, print_receipt: e.target.checked })}
+                                                        />
+                                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                                    </label>
+                                                </div>
+
+                                                {projectForm.print_receipt && (
+                                                    <div className="space-y-4 animate-fade-in-up">
+                                                        {/* Ancho del papel & Mostrar Logo */}
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="block text-sm font-bold text-gray-700 mb-1">Ancho del Papel</label>
+                                                                <select
+                                                                    className="w-full border-gray-200 border px-3 py-2 rounded-xl outline-none bg-white font-semibold"
+                                                                    value={projectForm.receipt_paper_width}
+                                                                    onChange={e => setProjectForm({ ...projectForm, receipt_paper_width: e.target.value })}
+                                                                >
+                                                                    <option value="80mm">80mm (Estándar)</option>
+                                                                    <option value="58mm">58mm (Portátil/Mini)</option>
+                                                                </select>
+                                                            </div>
+                                                            <div className="flex flex-col justify-end">
+                                                                <label className="relative inline-flex items-center cursor-pointer mb-2">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="sr-only peer"
+                                                                        checked={projectForm.print_logo}
+                                                                        onChange={e => setProjectForm({ ...projectForm, print_logo: e.target.checked })}
+                                                                    />
+                                                                    <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                                                    <span className="ml-2 text-xs font-bold text-gray-600">Imprimir Logo</span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Encabezado del ticket */}
+                                                        <div>
+                                                            <label className="block text-sm font-bold text-gray-700 mb-1">Encabezado (RUC / Dirección / Teléfono)</label>
+                                                            <textarea
+                                                                rows="3"
+                                                                className="w-full border-gray-200 border px-3 py-2 rounded-xl outline-none font-mono text-xs focus:ring-4 focus:ring-emerald-50 transition-all resize-none"
+                                                                placeholder="RUC: 10000000000&#10;Av. Principal 123&#10;Tel: 987654321"
+                                                                value={projectForm.receipt_header}
+                                                                onChange={e => setProjectForm({ ...projectForm, receipt_header: e.target.value })}
+                                                            />
+                                                        </div>
+
+                                                        {/* Agradecimiento / Footer */}
+                                                        <div>
+                                                            <label className="block text-sm font-bold text-gray-700 mb-1">Pie de Página (Mensaje de Agradecimiento)</label>
+                                                            <input
+                                                                className="w-full border-gray-200 border px-3 py-2 rounded-xl outline-none text-sm focus:ring-4 focus:ring-emerald-50 transition-all"
+                                                                placeholder="¡Gracias por su compra!"
+                                                                value={projectForm.receipt_footer}
+                                                                onChange={e => setProjectForm({ ...projectForm, receipt_footer: e.target.value })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="pt-2">
+                                                <button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-bold shadow-md transition-all active:scale-[0.98]">
+                                                    Guardar Cambios de Sucursal
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        <div className="pt-2">
-                                            <button className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-bold shadow-md transition-all active:scale-[0.98]">
-                                                Guardar Cambios de Sucursal
-                                            </button>
+                                        {/* Columna Derecha: Vista Previa en Vivo del Ticket */}
+                                        <div className="md:col-span-2 bg-slate-100 rounded-2xl p-4 flex flex-col items-center justify-start border border-slate-200 min-h-[300px]">
+                                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2 font-mono">Vista Previa del Ticket</span>
+                                            
+                                            {projectForm.print_receipt ? (
+                                                <div 
+                                                    className={`bg-white p-4 shadow-md border-t-4 border-slate-400 font-mono text-gray-800 transition-all duration-300 select-none overflow-hidden ${
+                                                        projectForm.receipt_paper_width === '58mm' ? 'w-[200px] text-[9px]' : 'w-[260px] text-xs'
+                                                    }`}
+                                                    style={{ borderStyle: 'solid dashed dashed dashed', borderWidth: '4px 1px 1px 1px', borderColor: '#94a3b8 #cbd5e1 #cbd5e1 #cbd5e1' }}
+                                                >
+                                                    {/* Logo Mockup */}
+                                                    {projectForm.print_logo && editingProject.logo_url && (
+                                                        <div className="flex justify-center mb-3">
+                                                            <img 
+                                                                src={editingProject.logo_url} 
+                                                                alt="logo mockup" 
+                                                                className="h-10 object-contain filter grayscale opacity-70"
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Nombre Tienda */}
+                                                    <div className="text-center font-bold uppercase border-b border-dashed pb-2 mb-2">
+                                                        {projectForm.name || 'MI NEGOCIO'}
+                                                    </div>
+
+                                                    {/* Encabezado */}
+                                                    <div className="text-center text-[10px] text-gray-500 whitespace-pre-line leading-relaxed mb-3">
+                                                        {projectForm.receipt_header || 'Sin datos de RUC/Dirección'}
+                                                    </div>
+
+                                                    {/* Detalles Venta Estáticos */}
+                                                    <div className="border-t border-b border-dashed py-2 my-2 text-[10px] space-y-1">
+                                                        <div className="flex justify-between">
+                                                            <span>1x Lady Speed</span>
+                                                            <span>{projectForm.currency === 'PEN' ? 'S/' : '$'} 11.70</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>1x Oralsone</span>
+                                                            <span>{projectForm.currency === 'PEN' ? 'S/' : '$'} 27.00</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Totales */}
+                                                    <div className="space-y-1 text-right font-bold text-[11px] mb-3">
+                                                        <div className="flex justify-between text-gray-400">
+                                                            <span>Subtotal</span>
+                                                            <span>{projectForm.currency === 'PEN' ? 'S/' : '$'} 38.70</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-emerald-600">
+                                                            <span>Descuento</span>
+                                                            <span>-{projectForm.currency === 'PEN' ? 'S/' : '$'} 13.70</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-base font-black border-t pt-1 mt-1">
+                                                            <span>TOTAL</span>
+                                                            <span>{projectForm.currency === 'PEN' ? 'S/' : '$'} 25.00</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Pie de boleta */}
+                                                    <div className="text-center text-[10px] text-gray-400 mt-4 border-t border-dashed pt-2 italic">
+                                                        {projectForm.receipt_footer || '¡Gracias por su preferencia!'}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center flex-1 text-center p-6 text-slate-400">
+                                                    <AlertTriangle className="w-10 h-10 mb-2 opacity-40 text-slate-500 animate-bounce" />
+                                                    <p className="text-xs font-bold uppercase tracking-wider">Impresión Desactivada</p>
+                                                    <p className="text-[10px] mt-1">Activa el switch para diseñar la boleta</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ) : (

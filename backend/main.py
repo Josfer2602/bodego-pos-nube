@@ -28,6 +28,13 @@ logger.info(f"ALLOWED_ORIGINS: {ALLOWED_ORIGINS}")
 # Crear las tablas en la base de datos (SQLite)
 models.Base.metadata.create_all(bind=engine)
 
+# Correr migraciones de columnas faltantes de promociones
+try:
+    from migrate_promos import migrate as run_promo_migrations
+    run_promo_migrations()
+except Exception as e:
+    logger.error(f"Error corriendo migracion de promociones: {e}")
+
 # Script para crear cuentas iniciales básicas
 # la UI muestra credenciales de superadmin, así que la base de datos debe
 # tener al menos ese usuario. Podemos añadir también una cuenta "admin"

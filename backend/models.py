@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Date, Table
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Date, Table, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 import datetime
@@ -34,6 +34,13 @@ class Project(Base):
     currency = Column(String, default="PEN")
     theme_color = Column(String, default="#2563eb") # Color default (Azul Tailwind)
     logo_url = Column(String, nullable=True)
+
+    # Configuración de boleta / ticket
+    print_receipt = Column(Boolean, default=True)
+    receipt_paper_width = Column(String, default="80mm") # '80mm' o '58mm'
+    receipt_header = Column(String, default="RUC: 10000000000\nAv. Principal 123\nTel: 987 654 321")
+    receipt_footer = Column(String, default="¡Gracias por su compra!")
+    print_logo = Column(Boolean, default=True)
 
     users = relationship("User", secondary=user_project, back_populates="projects", passive_deletes=True)
     products = relationship("Product", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
@@ -101,10 +108,15 @@ class Promotion(Base):
     __tablename__ = "promotions"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
-    discount_percentage = Column(Float)
+    discount_percentage = Column(Float, default=0.0)
     start_date = Column(Date)
     end_date = Column(Date)
     project_id = Column(Integer, ForeignKey("projects.id", ondelete='CASCADE'))
+
+    # Nuevas Columnas para combos y mix & match
+    promo_type = Column(String, default="simple") # 'simple', 'combo', 'mix_match'
+    combo_price = Column(Float, nullable=True)
+    mix_match_qty = Column(Integer, nullable=True)
 
     project = relationship("Project", back_populates="promotions")
     products = relationship("Product", secondary=promotion_product, back_populates="promotions")

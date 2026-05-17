@@ -16,7 +16,10 @@ const Promotions = () => {
         discount_percentage: '',
         start_date: '',
         end_date: '',
-        product_ids: []
+        product_ids: [],
+        promo_type: 'simple',
+        combo_price: '',
+        mix_match_qty: ''
     });
 
     useEffect(() => {
@@ -48,11 +51,14 @@ const Promotions = () => {
         e.preventDefault();
         const payload = {
             name: formData.name,
-            discount_percentage: parseFloat(formData.discount_percentage),
+            discount_percentage: formData.promo_type === 'combo' ? 0.0 : parseFloat(formData.discount_percentage || 0),
             start_date: formData.start_date,
             end_date: formData.end_date,
             project_id: activeProject,
-            product_ids: formData.product_ids
+            product_ids: formData.product_ids,
+            promo_type: formData.promo_type,
+            combo_price: formData.promo_type === 'combo' ? parseFloat(formData.combo_price || 0) : null,
+            mix_match_qty: formData.promo_type === 'mix_match' ? parseInt(formData.mix_match_qty || 0) : null
         };
 
         try {
@@ -63,7 +69,7 @@ const Promotions = () => {
             }
             setShowModal(false);
             setEditingId(null);
-            setFormData({ name: '', discount_percentage: '', start_date: '', end_date: '', product_ids: [] });
+            setFormData({ name: '', discount_percentage: '', start_date: '', end_date: '', product_ids: [], promo_type: 'simple', combo_price: '', mix_match_qty: '' });
             fetchPromotions();
         } catch (error) {
             alert(error.response?.data?.detail || "Error guardando promoción");
@@ -76,7 +82,10 @@ const Promotions = () => {
             discount_percentage: promo.discount_percentage,
             start_date: promo.start_date,
             end_date: promo.end_date,
-            product_ids: promo.products.map(p => p.id)
+            product_ids: promo.products.map(p => p.id),
+            promo_type: promo.promo_type || 'simple',
+            combo_price: promo.combo_price || '',
+            mix_match_qty: promo.mix_match_qty || ''
         });
         setEditingId(promo.id);
         setShowModal(true);
@@ -126,7 +135,7 @@ const Promotions = () => {
                 <button
                     onClick={() => {
                         setEditingId(null);
-                        setFormData({ name: '', discount_percentage: '', start_date: '', end_date: '', product_ids: [] });
+                        setFormData({ name: '', discount_percentage: '', start_date: '', end_date: '', product_ids: [], promo_type: 'simple', combo_price: '', mix_match_qty: '' });
                         setShowModal(true);
                     }}
                     className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center shadow hover:bg-purple-700 transition"
@@ -139,11 +148,17 @@ const Promotions = () => {
                 {promotions.map(promo => (
                     <div key={promo.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-md transition">
                         <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-800 break-words">{promo.name}</h3>
-                                <p className="text-purple-600 font-black text-2xl flex items-center">
-                                    <Percent className="w-5 h-5 mr-1" /> {promo.discount_percentage}
-                                </p>
+                            <div className="flex-1 pr-2">
+                                <h3 className="text-xl font-bold text-gray-800 break-words mb-1">{promo.name}</h3>
+                                <div className="text-purple-600 font-black text-xl flex items-center">
+                                    {promo.promo_type === 'combo' ? (
+                                        <span>Combo: {currencySymbol} {promo.combo_price?.toFixed(2)}</span>
+                                    ) : promo.promo_type === 'mix_match' ? (
+                                        <span>Mix & Match: -{promo.discount_percentage}% <span className="text-xs font-normal text-purple-400 block">Min: {promo.mix_match_qty} unid.</span></span>
+                                    ) : (
+                                        <span className="flex items-center"><Percent className="w-5 h-5 mr-0.5" /> -{promo.discount_percentage}%</span>
+                                    )}
+                                </div>
                             </div>
                             {getPromoStatus(promo.start_date, promo.end_date)}
                         </div>
@@ -208,9 +223,38 @@ const Promotions = () => {
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-1">Porcentaje a Descontar (%)</label>
-                                <input type="number" step="0.1" max="100" min="0.1" required name="discount_percentage" placeholder="ej. 20 para 20%" className="w-full border p-2 rounded outline-none text-purple-700 font-bold bg-purple-50" value={formData.discount_percentage} onChange={e => setFormData({ ...formData, discount_percentage: e.target.value })} />
+                                <label className="text-sm font-medium text-gray-700 block mb-1">Tipo de Promoción</label>
+                                <select 
+                                    className="w-full border p-2 rounded outline-none bg-white font-medium focus:ring-2 focus:ring-purple-500"
+                                    value={formData.promo_type} 
+                                    onChange={e => setFormData({ ...formData, promo_type: e.target.value })}
+                                >
+                                    <option value="simple">Porcentaje Simple (Descuento individual)</option>
+                                    <option value="combo">Combo (Paquete de artículos por precio cerrado)</option>
+                                    <option value="mix_match">Mix & Match (Lleva X unidades por Y% de descuento)</option>
+                                </select>
                             </div>
+
+                            {(formData.promo_type === 'simple' || formData.promo_type === 'mix_match') && (
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 block mb-1">Porcentaje a Descontar (%)</label>
+                                    <input type="number" step="0.1" max="100" min="0.1" required name="discount_percentage" placeholder="ej. 20 para 20%" className="w-full border p-2 rounded outline-none text-purple-700 font-bold bg-purple-50" value={formData.discount_percentage} onChange={e => setFormData({ ...formData, discount_percentage: e.target.value })} />
+                                </div>
+                            )}
+
+                            {formData.promo_type === 'combo' && (
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 block mb-1">Precio Fijo de Venta del Combo ({currencySymbol})</label>
+                                    <input type="number" step="0.01" min="0.01" required name="combo_price" placeholder="ej. 15.00" className="w-full border p-2 rounded outline-none text-green-700 font-bold bg-green-50" value={formData.combo_price} onChange={e => setFormData({ ...formData, combo_price: e.target.value })} />
+                                </div>
+                            )}
+
+                            {formData.promo_type === 'mix_match' && (
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 block mb-1">Cantidad Mínima Requerida (Unidades)</label>
+                                    <input type="number" min="2" required name="mix_match_qty" placeholder="ej. 3" className="w-full border p-2 rounded outline-none text-blue-700 font-bold bg-blue-50" value={formData.mix_match_qty} onChange={e => setFormData({ ...formData, mix_match_qty: e.target.value })} />
+                                </div>
+                            )}
 
                             <div className="pt-2">
                                 <label className="text-sm font-medium text-gray-700 block mb-2">Selecciona qué productos aplican al descuento:</label>

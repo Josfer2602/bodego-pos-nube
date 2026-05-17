@@ -29,7 +29,10 @@ def create_promotion(promo: schemas.PromotionCreate, db: Session = Depends(get_d
         discount_percentage=promo.discount_percentage,
         start_date=promo.start_date,
         end_date=promo.end_date,
-        project_id=promo.project_id
+        project_id=promo.project_id,
+        promo_type=promo.promo_type,
+        combo_price=promo.combo_price,
+        mix_match_qty=promo.mix_match_qty
     )
 
     # Añadir los productos indicados
@@ -60,6 +63,9 @@ def update_promotion(promo_id: int, promo: schemas.PromotionCreate, db: Session 
     db_promo.discount_percentage = promo.discount_percentage
     db_promo.start_date = promo.start_date
     db_promo.end_date = promo.end_date
+    db_promo.promo_type = promo.promo_type
+    db_promo.combo_price = promo.combo_price
+    db_promo.mix_match_qty = promo.mix_match_qty
 
     # Limpiar y re-agregar productos
     db_promo.products.clear()
