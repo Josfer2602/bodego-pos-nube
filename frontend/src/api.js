@@ -8,7 +8,7 @@ const api = axios.create({
     timeout: 10000, // 10s para evitar peticiones colgadas
 });
 
-// Interceptor para inyectar dinámicamente el Token JWT desde localStorage
+// Interceptor REQUEST: inyectar dinámicamente el Token JWT desde localStorage
 api.interceptors.request.use(
     config => {
         const token = localStorage.getItem('token');
@@ -17,7 +17,22 @@ api.interceptors.request.use(
         }
         return config;
     },
+    error => Promise.reject(error)
+);
+
+// Interceptor RESPONSE: detectar 401 y limpiar sesión expirada
+api.interceptors.response.use(
+    response => response,
     error => {
+        if (error.response?.status === 401) {
+            // Token expirado o inválido — limpiar sesión y redirigir al login
+            localStorage.removeItem('token');
+            localStorage.removeItem('activeProject');
+            // Redirigir solo si no estamos ya en /login
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
+        }
         return Promise.reject(error);
     }
 );

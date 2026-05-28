@@ -1,7 +1,109 @@
 @import "tailwindcss";
 
+/* ==============================
+   SISTEMA DE COLOR DINÁMICO
+   El color primario se inyecta
+   como --color-primary desde
+   AuthContext vía Layout
+   ============================== */
+:root {
+  --color-primary: #2563eb;          /* default: blue-600  */
+  --color-primary-light: #3b82f6;    /* 10% más claro      */
+  --color-primary-dark:  #1d4ed8;    /* 10% más oscuro     */
+  --color-primary-bg:    #eff6ff;    /* tint muy claro (50)*/
+  --color-primary-border: #bfdbfe;   /* tint borde (200)   */
+  --color-primary-text:  #1e40af;    /* texto sobre fondo claro */
+}
+
+/* Utilidades semánticas usando la variable */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.btn-primary:active {
+  filter: brightness(0.95);
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  color: #374151;
+  font-weight: 700;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  transition: background-color 0.15s ease;
+}
+.btn-secondary:hover {
+  background-color: #f9fafb;
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  transition: filter 0.15s ease;
+}
+.btn-danger:hover { filter: brightness(1.08); }
+
+/* Badge semántico de estado activo/vigente */
+.badge-primary {
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary-text);
+  border: 1px solid var(--color-primary-border);
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Icono badge con color primario */
+.icon-primary {
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+/* Focus ring primario */
+.focus-primary:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  outline: none;
+}
+
+/* Active nav link en sidebar */
+.nav-active {
+  background: rgba(255,255,255,0.20);
+  border-left: 4px solid white;
+}
+
 body {
-  background-color: #f4f4f5; /* Un gris un poco más refinado */
+  background-color: #f8fafc; /* slate-50 */
   color: #0f172a;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -55,9 +157,9 @@ body {
 }
 
 @keyframes subtle-pulse {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
-  70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(var(--color-primary), 0.4); }
+  70%  { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(var(--color-primary), 0);   }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(var(--color-primary), 0);   }
 }
 .animate-subtle-pulse {
   animation: subtle-pulse 2s infinite;

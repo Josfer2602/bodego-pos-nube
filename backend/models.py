@@ -19,6 +19,7 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     role = Column(String) # 'superadmin', 'admin', 'client'
+    is_active = Column(Boolean, default=True)
 
     projects = relationship("Project", secondary=user_project, back_populates="users")
 
@@ -141,8 +142,10 @@ class SaleDetail(Base):
     id = Column(Integer, primary_key=True, index=True)
     sale_id = Column(Integer, ForeignKey("sales.id", ondelete='CASCADE'))
     product_id = Column(Integer, ForeignKey("products.id", ondelete='CASCADE'))
+    barcode_id = Column(Integer, ForeignKey("barcodes.id", ondelete='SET NULL'), nullable=True)
     quantity = Column(Integer)
     price = Column(Float) # El precio unitario real con el que se cobró (con o sin descuento aplicado)
 
     sale = relationship("Sale", back_populates="details")
     product = relationship("Product", back_populates="sale_details")
+    barcode = relationship("Barcode")

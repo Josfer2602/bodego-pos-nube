@@ -31,7 +31,8 @@ const Login = () => {
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
             <div className="max-w-sm w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-8">
                 <div className="text-center mb-8">
-                    <div className="bg-blue-600 text-white w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-600/30">
+                    <div className="text-white w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+                        style={{ backgroundColor: 'var(--color-primary, #2563eb)', boxShadow: '0 10px 25px -5px color-mix(in srgb, var(--color-primary, #2563eb) 40%, transparent)' }}>
                         <Lock className="w-8 h-8" />
                     </div>
                     <h2 className="text-2xl font-bold text-slate-800">Iniciar Sesión</h2>
@@ -82,7 +83,8 @@ const Login = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-all shadow-md shadow-blue-600/20 flex justify-center items-center ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        className={`w-full py-3.5 px-4 text-white rounded-xl font-medium focus:outline-none transition-all shadow-md flex justify-center items-center ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        style={{ backgroundColor: 'var(--color-primary, #2563eb)' }}
                     >
                         {loading ? (
                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

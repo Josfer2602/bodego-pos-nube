@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../AuthContext';
-import { Shield, Plus, Lock, Users, Briefcase, Image as ImageIcon, Settings, PauseCircle, PlayCircle, Trash2, X, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Shield, ShieldCheck, UserMinus, UserCheck, Plus, Lock, Users, Briefcase, Image as ImageIcon, Settings, PauseCircle, PlayCircle, Trash2, X, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 
 const AdminPanel = () => {
     const { user, selectProject, activeProject, refreshProjectDetails } = useAuth();
@@ -39,6 +40,10 @@ const AdminPanel = () => {
     // Estados para Creación/Edición Custom
     const [isCreating, setIsCreating] = useState(false);
     const [showCreateSuccess, setShowCreateSuccess] = useState(false);
+
+    // Estados para Reset de Contraseña
+    const [resetUser, setResetUser] = useState(null);
+    const [newPassword, setNewPassword] = useState('');
 
     // Alta Unificada (Superadmin)
     const [unifiedForm, setUnifiedForm] = useState({
@@ -192,7 +197,7 @@ const AdminPanel = () => {
             }, 2500);
         } catch (error) {
             setIsCreating(false);
-            alert(error.response?.data?.detail || "Error en el alta unificada");
+            toast.error(error.response?.data?.detail || 'Error en el alta unificada');
         }
     };
 
@@ -222,7 +227,7 @@ const AdminPanel = () => {
             }, 1500); // Reducido de 2500 a 1500
         } catch (error) {
             setIsCreating(false);
-            alert(error.response?.data?.detail || "Error al procesar sucursal");
+            toast.error(error.response?.data?.detail || 'Error al procesar sucursal');
         }
     };
 
@@ -258,7 +263,7 @@ const AdminPanel = () => {
             }, 2500);
         } catch (error) {
             setIsDeleting(false);
-            alert(error.response?.data?.detail || "Error al eliminar");
+            toast.error(error.response?.data?.detail || 'Error al eliminar');
             setProjToDelete(null);
         }
     };
@@ -275,7 +280,7 @@ const AdminPanel = () => {
             setUserForm({ username: '', password: '', role: 'client' });
             fetchUsers();
         } catch (error) {
-            alert(error.response?.data?.detail || "Error al crear usuario");
+            toast.error(error.response?.data?.detail || 'Error al crear usuario');
         }
     };
 
@@ -288,7 +293,7 @@ const AdminPanel = () => {
             if (selectedProjectId) fetchProjectUsers(selectedProjectId);
             fetchUsers();
         } catch (error) {
-            alert(error.response?.data?.detail || "Error en asignación");
+            toast.error(error.response?.data?.detail || 'Error en asignación');
         }
     };
 
@@ -298,7 +303,18 @@ const AdminPanel = () => {
             await api.put(`/projects/${project_id}`, { status: newStatus });
             fetchProjects();
         } catch (error) {
-            alert(error.response?.data?.detail || "Error cambiando status");
+            toast.error(error.response?.data?.detail || 'Error cambiando status');
+        }
+    };
+
+    const toggleUserStatus = async (user_id) => {
+        try {
+            await api.put(`/users/${user_id}/status`);
+            toast.success('Estado del usuario actualizado');
+            if (selectedProjectId) fetchProjectUsers(selectedProjectId);
+            fetchUsers();
+        } catch (error) {
+            toast.error(error.response?.data?.detail || 'Error cambiando estado');
         }
     };
 
@@ -320,37 +336,63 @@ const AdminPanel = () => {
             await api.post(`/projects/${selectedProjectForLogo}/logo`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            alert("Logo subido y redimensionado a 500x500 pixeles exitosamente.");
+            toast.success('Logo subido exitosamente.');
             fetchProjects();
         } catch (error) {
-            alert(error.response?.data?.detail || "Error subiendo logo");
+            toast.error(error.response?.data?.detail || 'Error subiendo logo');
         }
         e.target.value = null; // reset
         setSelectedProjectForLogo(null);
     };
 
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+        try {
+            await api.put(`/users/${resetUser.id}/password`, { new_password: newPassword });
+            toast.success(`Contraseña actualizada para ${resetUser.username}`);
+            setResetUser(null);
+            setNewPassword('');
+        } catch (error) {
+            toast.error(error.response?.data?.detail || 'Error al cambiar contraseña');
+        }
+    };
+
     return (
-        <div className="p-4 md:p-8 w-full h-full space-y-8">
-            <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col h-screen bg-slate-50 overflow-hidden relative">
+
+            {/* Top Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shrink-0 shadow-sm z-10">
                 <div className="flex items-center gap-3">
-                    <Shield className="w-8 h-8 text-blue-600" />
-                    <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Consola Global</h1>
+                    <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)' }}
+                    >
+                        <Shield className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800">Consola Global</h1>
+                        <p className="text-xs text-gray-400 hidden md:block">Gestión de sucursales y usuarios del sistema.</p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex flex-col items-end">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Rol: {user.role}</p>
+                        <p className="text-[10px] text-gray-400">Panel Maestro</p>
+                    </div>
                     {user.role === 'superadmin' && (
                         <button
                             onClick={openCreateModal}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-blue-600/20 transition-all flex items-center gap-2"
+                            className="text-white px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 text-sm"
+                            style={{ backgroundColor: 'var(--color-primary)' }}
                         >
-                            <Plus className="w-5 h-5" /> Nueva Sucursal
+                            <Plus className="w-4 h-4" /> Nueva Sucursal
                         </button>
                     )}
-                    <div className="text-right hidden sm:block">
-                        <p className="text-sm text-gray-500 uppercase font-bold tracking-widest">Rol: {user.role}</p>
-                        <p className="text-xs text-gray-400">Panel Maestro</p>
-                    </div>
                 </div>
             </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar space-y-6">
 
             {/* Modal de Registro/Edición Unificado */}
             {showModal && (
@@ -360,15 +402,16 @@ const AdminPanel = () => {
 
                     {/* Modal Content */}
                     <div className="glass-panel bg-white/95 w-full max-w-4xl rounded-3xl shadow-2xl ring-1 ring-black/5 relative overflow-hidden animate-fade-in-up">
-                        <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50 rounded-full -mr-24 -mt-24 opacity-50"></div>
+                        <div className="absolute top-0 right-0 w-48 h-48 rounded-full -mr-24 -mt-24 opacity-30 pointer-events-none"
+                            style={{ backgroundColor: 'var(--color-primary-bg)' }}></div>
 
                         <div className="p-4 md:p-6 relative">
                             <div className="flex justify-between items-center mb-5">
                                 <h2 className="text-2xl font-bold flex items-center gap-3 text-gray-800">
                                     {editingProject ? (
-                                        <><Settings className="w-7 h-7 text-amber-500" /> Configuración de Sucursal</>
+                                        <><Settings className="w-7 h-7" style={{ color: 'var(--color-primary)' }} /> Configuración de Sucursal</>
                                     ) : (
-                                        <><Briefcase className="w-7 h-7 text-blue-600" /> Alta Rápida de Sucursal</>
+                                        <><Briefcase className="w-7 h-7" style={{ color: 'var(--color-primary)' }} /> Alta Rápida de Sucursal</>
                                     )}
                                 </h2>
                                 <button
@@ -392,7 +435,7 @@ const AdminPanel = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                                         {/* Columna Izquierda: Formulario (Detalles + Ticket settings) */}
                                         <div className="md:col-span-3 space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                                            <h3 className="text-xs font-black uppercase tracking-widest text-blue-600/60 pb-2 border-b font-mono">Detalles del Local</h3>
+                                            <h3 className="text-xs font-black uppercase tracking-widest pb-2 border-b font-mono" style={{ color: 'var(--color-primary)' }}>Detalles del Local</h3>
                                             
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div className="sm:col-span-2">
@@ -746,7 +789,8 @@ const AdminPanel = () => {
                                         </div>
 
                                         <div className="md:col-span-2 pt-2">
-                                            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all transform active:scale-[0.98]">
+                                            <button className="w-full text-white py-3 rounded-xl font-bold shadow-lg transition-all transform active:scale-[0.98]"
+                                                style={{ backgroundColor: 'var(--color-primary)' }}>
                                                 Crear Sucursal & Admin
                                             </button>
                                         </div>
@@ -810,7 +854,25 @@ const AdminPanel = () => {
                                                                     u.role === 'admin' ? 'bg-blue-100 text-blue-600' :
                                                                         'bg-gray-100 text-gray-500'
                                                                     }`}>{u.role}</span>
-                                                            </div>
+                                                                    {user.role === 'superadmin' && (
+                                                                        <div className="flex items-center gap-1 ml-3">
+                                                                            <button
+                                                                                onClick={() => { setResetUser(u); setNewPassword(''); }}
+                                                                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100"
+                                                                                title="Cambiar contraseña"
+                                                                            >
+                                                                                <ShieldCheck className="w-4 h-4" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => toggleUserStatus(u.id)}
+                                                                                className={`p-1.5 rounded-lg transition-colors border border-transparent ${u.is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50 hover:border-red-100' : 'text-red-500 hover:text-green-600 hover:bg-green-50 hover:border-green-100'}`}
+                                                                                title={u.is_active ? "Anular usuario" : "Activar usuario"}
+                                                                            >
+                                                                                {u.is_active ? <UserMinus className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                         ))
                                                     )}
                                                 </div>
@@ -824,11 +886,13 @@ const AdminPanel = () => {
                 </div>
             )}
 
-            {/* Listado de Sucursales y Configuración Visual */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 ring-1 ring-black/5 overflow-hidden">
-                <div className="p-6 border-b bg-gray-50/50 flex justify-between items-center">
-                    <h2 className="text-xl font-semibold flex items-center gap-2 text-gray-800"><Settings className="w-5 h-5 text-gray-400" /> Sucursales Registradas</h2>
-                    <span className="text-xs font-bold text-gray-400 italic">{projects.length} Total</span>
+            {/* Branch List */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 bg-slate-50/50 flex justify-between items-center">
+                    <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <Settings className="w-4 h-4 text-slate-400" /> Sucursales Registradas
+                    </h2>
+                    <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">{projects.length} total</span>
                 </div>
                 <div className="divide-y divide-gray-100">
                     {projects.map(p => (
@@ -847,7 +911,8 @@ const AdminPanel = () => {
                                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                             {p.status === 'active' ? 'En Línea' : 'Suspendido'}
                                         </span>
-                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border"
+                                            style={{ backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)', borderColor: 'var(--color-primary-border)' }}>
                                             {p.membership_type?.toUpperCase() || 'MENSUAL'}
                                         </span>
                                     </div>
@@ -859,7 +924,9 @@ const AdminPanel = () => {
                                 {user.role === 'superadmin' && (
                                     <>
 
-                                        <button onClick={() => openEditModal(p)} className="p-2.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-blue-600 shadow-sm transition-all" title="Editar">
+                                        <button onClick={() => openEditModal(p)}
+                                            className="p-2.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl shadow-sm transition-all"
+                                            style={{ color: 'var(--color-primary)' }} title="Editar">
                                             <Settings className="w-5 h-5" />
                                         </button>
                                     </>
@@ -888,10 +955,11 @@ const AdminPanel = () => {
                                 <button
                                     onClick={() => { selectProject(p.id); navigate('/'); }}
                                     disabled={p.status === 'suspended' && user.role !== 'superadmin'}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-sm transition-all text-sm"
+                                    className="flex items-center gap-2 px-4 py-2 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-lg shadow-sm transition text-sm"
+                                    style={{ backgroundColor: 'var(--color-primary)' }}
                                     title="Entrar al punto de venta"
                                 >
-                                    Entrar a Tienda →
+                                    Entrar →
                                 </button>
                             </div>
 
@@ -901,7 +969,7 @@ const AdminPanel = () => {
                 </div>
             </div>
 
-            {/* Input oculto para recibir el archivo */}
+            {/* Hidden file input */}
             <input
                 type="file"
                 ref={fileInputRef}
@@ -909,6 +977,7 @@ const AdminPanel = () => {
                 className="hidden"
                 accept="image/png, image/jpeg, image/jpg"
             />
+            </div> {/* end scrollable content */}
 
             {/* Modal de Confirmación de Borrado */}
             {showDeleteConfirm && (
@@ -987,7 +1056,7 @@ const AdminPanel = () => {
             {/* Modal de Éxito al Crear/Actualizar */}
             {showCreateSuccess && (
                 <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="fixed inset-0 bg-blue-600/10 backdrop-blur-sm"></div>
+                    <div className="fixed inset-0 backdrop-blur-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 8%, transparent)' }}></div>
                     <div className="bg-white rounded-3xl p-10 shadow-2xl shadow-blue-200 border border-blue-50 text-center relative animate-in zoom-in slide-in-from-bottom-10 duration-500">
                         <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-blue-100/50">
                             <CheckCircle2 className="w-14 h-14 text-blue-500" />
@@ -997,6 +1066,37 @@ const AdminPanel = () => {
                     </div>
                 </div>
             )}
+            {/* Modal de Cambio de Contraseña */}
+            {resetUser && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="fixed inset-0 backdrop-blur-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 8%, transparent)' }} onClick={() => setResetUser(null)}></div>
+                    <div className="bg-white rounded-3xl p-8 shadow-2xl relative w-full max-w-sm animate-in zoom-in slide-in-from-bottom-10 duration-300">
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)' }}>
+                            <Lock className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-xl font-bold text-center mb-1 text-gray-800">Cambiar Contraseña</h3>
+                        <p className="text-center text-sm text-gray-500 mb-6">Nuevo acceso para <b>{resetUser.username}</b></p>
+                        
+                        <form onSubmit={handleResetPassword}>
+                            <input
+                                type="text"
+                                required
+                                placeholder="Nueva contraseña"
+                                className="w-full border-gray-200 border-2 px-4 py-3 rounded-xl focus:ring-4 focus:ring-blue-50 outline-none transition-all mb-4"
+                                value={newPassword}
+                                onChange={e => setNewPassword(e.target.value)}
+                            />
+                            <div className="flex gap-3 mt-2">
+                                <button type="button" onClick={() => setResetUser(null)} className="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-colors">Cancelar</button>
+                                <button type="submit" className="flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-[0.98]" style={{ backgroundColor: 'var(--color-primary)' }}>
+                                    Guardar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };

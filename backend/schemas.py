@@ -20,8 +20,12 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+class UserPasswordUpdate(BaseModel):
+    new_password: str
+
 class UserResponse(UserBase):
     id: int
+    is_active: bool = True
     model_config = ConfigDict(from_attributes=True)
 
 # --- Project Schemas ---
@@ -139,6 +143,7 @@ class SaleCreate(BaseModel):
 class SaleDetailResponse(SaleDetailBase):
     id: int
     product: Optional[ProductShort] = None
+    barcode: Optional[BarcodeResponse] = None
     model_config = ConfigDict(from_attributes=True)
 
 class SaleResponse(BaseModel):

@@ -112,6 +112,7 @@ def create_sale(sale: schemas.SaleCreate, db: Session = Depends(get_db), current
         db_sale_detail = models.SaleDetail(
             sale_id=db_sale.id,
             product_id=prod.id,
+            barcode_id=b_id,
             quantity=qty,
             price=processed["sold_price"]
         )
@@ -120,6 +121,7 @@ def create_sale(sale: schemas.SaleCreate, db: Session = Depends(get_db), current
     db.commit()
     db.refresh(db_sale)
     return db_sale
+
 @router.delete("/{sale_id}")
 def delete_sale(sale_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_admin_user)):
     sale = db.query(models.Sale).filter(models.Sale.id == sale_id).first()
@@ -131,18 +133,31 @@ def delete_sale(sale_id: int, db: Session = Depends(get_db), current_user: model
     if current_user.role != "superadmin" and project not in current_user.projects:
         raise HTTPException(status_code=403, detail="No tiene permisos para eliminar ventas de esta sucursal")
 
-    # 1. Devolver el stock a cada producto
+    # 1. Devolver el stock a cada producto y su respectivo código de barra/lote
     for detail in sale.details:
         product = db.query(models.Product).filter(models.Product.id == detail.product_id).first()
         if product:
             product.stock += detail.quantity
             db.add(product)
+        
+        if detail.barcode_id:
+            barcode = db.query(models.Barcode).filter(models.Barcode.id == detail.barcode_id).first()
+            if barcode:
+                barcode.stock += detail.quantity
+                db.add(barcode)
+        else:
+            # Fallback si no hay un barcode_id específico: devolver al primer lote que expira
+            barcode = db.query(models.Barcode).filter(
+                models.Barcode.product_id == detail.product_id
+            ).order_by(
+                models.Barcode.expiration_date.is_(None),
+                models.Barcode.expiration_date.asc()
+            ).first()
+            if barcode:
+                barcode.stock += detail.quantity
+                db.add(barcode)
 
-    # 2. Eliminar la venta (la relación en modelos.py debería encargarce de los detalles si tiene cascade, 
-    # pero para mayor seguridad borraremos los detalles primero si no estamos seguros de la configuración de sqlalchemy cascade)
-    # Sin embargo, en SQLAlchemy 'relationship' suele requerir configure cascade="all, delete-orphan"
-    # Vamos a eliminar los detalles explícitamente por seguridad.
-    db.query(models.SaleDetail).filter(models.SaleDetail.sale_id == sale_id).delete()
+    # 2. Eliminar la venta (las relaciones se eliminarán por cascada)
     db.delete(sale)
     db.commit()
 

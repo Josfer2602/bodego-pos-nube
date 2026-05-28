@@ -21,10 +21,53 @@ const Layout = ({ children }) => {
     };
 
     // Extraemos el color directamente del proyecto seleccionado, si no hay, aplicamos color gris estándar
-    const themeColor = projectDetails?.theme_color || '#111827';
+    const themeColor = projectDetails?.theme_color || '#2563eb';
+
+    // Inyectar variables CSS dinámica según el color de la sucursal
+    useEffect(() => {
+        const root = document.documentElement;
+        root.style.setProperty('--color-primary', themeColor);
+
+        // Derivar variantes usando color-mix (soportado en Chromium 111+)
+        // Para mayor compatibilidad, usamos manipulación hex manual
+        const hex = themeColor.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+
+        // Light: mezclar con blanco (80% blanco)
+        const lR = Math.round(r + (255 - r) * 0.80);
+        const lG = Math.round(g + (255 - g) * 0.80);
+        const lB = Math.round(b + (255 - b) * 0.80);
+        root.style.setProperty('--color-primary-bg', `rgb(${lR},${lG},${lB})`);
+
+        // Border: mezclar con blanco (50%)
+        const bR = Math.round(r + (255 - r) * 0.55);
+        const bG = Math.round(g + (255 - g) * 0.55);
+        const bB = Math.round(b + (255 - b) * 0.55);
+        root.style.setProperty('--color-primary-border', `rgb(${bR},${bG},${bB})`);
+
+        // Dark: oscurecer 20%
+        const dR = Math.round(r * 0.80);
+        const dG = Math.round(g * 0.80);
+        const dB = Math.round(b * 0.80);
+        root.style.setProperty('--color-primary-dark', `rgb(${dR},${dG},${dB})`);
+
+        // Light shade (hover): aclarar 10%
+        const hR = Math.min(255, Math.round(r + (255 - r) * 0.10));
+        const hG = Math.min(255, Math.round(g + (255 - g) * 0.10));
+        const hB = Math.min(255, Math.round(b + (255 - b) * 0.10));
+        root.style.setProperty('--color-primary-light', `rgb(${hR},${hG},${hB})`);
+
+        // Text color on light bg: oscurecer bastante
+        const tR = Math.round(r * 0.55);
+        const tG = Math.round(g * 0.55);
+        const tB = Math.round(b * 0.55);
+        root.style.setProperty('--color-primary-text', `rgb(${tR},${tG},${tB})`);
+    }, [themeColor]);
 
     return (
-        <div className="h-screen w-full flex flex-col md:flex-row bg-gray-100 overflow-hidden">
+        <div className="h-screen w-full flex flex-col md:flex-row bg-slate-50 overflow-hidden">
             <Toaster position="top-center" richColors closeButton />
             {/* Mobile top bar */}
             <div className="md:hidden flex items-center justify-between bg-white/80 backdrop-blur-md p-3 shadow-sm border-b sticky top-0 z-50">
@@ -139,8 +182,8 @@ const Layout = ({ children }) => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-hidden flex flex-col bg-gray-100">
-                <div className="flex-1 overflow-y-auto overflow-x-hidden md:p-4 xl:p-6 p-4 flex flex-col relative custom-scrollbar">
+            <div className="flex-1 overflow-hidden flex flex-col bg-slate-50">
+                <div className="flex-1 overflow-hidden flex flex-col relative">
                     {children}
                 </div>
             </div>

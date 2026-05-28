@@ -71,7 +71,7 @@ const ProjectSelector = () => {
 
                 {loading ? (
                     <div className="flex justify-center py-20">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: 'var(--color-primary, #2563eb)' }}></div>
                     </div>
                 ) : projects.length === 0 ? (
                     <div className="bg-white rounded-3xl p-16 text-center border border-slate-200 shadow-sm mt-8">
@@ -83,7 +83,8 @@ const ProjectSelector = () => {
                         {(user?.role === 'superadmin' || user?.role === 'admin') && (
                             <button
                                 onClick={() => navigate('/admin')}
-                                className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                                className="inline-flex items-center gap-2 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+                                style={{ backgroundColor: 'var(--color-primary, #2563eb)' }}
                             >
                                 <ShieldCheck className="w-5 h-5" />
                                 Ir al Panel de Control
@@ -98,14 +99,15 @@ const ProjectSelector = () => {
                                 onClick={() => handleSelect(project.id)}
                                 className="text-left bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 transition-all group"
                             >
-                                <div className="bg-blue-50 text-blue-600 w-12 h-12 rounded-xl flex items-center justify-center mb-5 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-colors"
+                                    style={{ backgroundColor: 'var(--color-primary-bg, #eff6ff)', color: 'var(--color-primary, #2563eb)' }}>
                                     <Store className="w-6 h-6" />
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-800 mb-2">{project.name}</h3>
                                 <p className="text-slate-500 text-sm line-clamp-2 h-10">
                                     {project.description || 'Sucursal activa para ventas e inventario.'}
                                 </p>
-                                <div className="mt-6 flex items-center text-blue-600 font-medium text-sm group-hover:underline">
+                                <div className="mt-6 flex items-center font-medium text-sm group-hover:underline" style={{ color: 'var(--color-primary, #2563eb)' }}>
                                     Entrar a sucursal <ChevronRight className="w-4 h-4 ml-1" />
                                 </div>
                             </button>

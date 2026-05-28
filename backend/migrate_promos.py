@@ -83,6 +83,15 @@ def migrate():
             else:
                 conn.execute(text("ALTER TABLE projects ADD COLUMN print_logo BOOLEAN DEFAULT TRUE"))
 
+        # === MIGRACIONES DE SALE_DETAILS ===
+        # 9. Agregar barcode_id
+        try:
+            conn.execute(text("SELECT barcode_id FROM sale_details LIMIT 1"))
+            print("La columna 'barcode_id' ya existe en 'sale_details'.")
+        except Exception:
+            print("Agregando columna 'barcode_id' a 'sale_details'...")
+            conn.execute(text("ALTER TABLE sale_details ADD COLUMN barcode_id INTEGER"))
+
     print("¡Migración de esquema completada exitosamente!")
 
 if __name__ == "__main__":
