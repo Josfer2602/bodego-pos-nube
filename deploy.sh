@@ -45,7 +45,7 @@ fi
 
 # Actualizar código desde Git
 log "Actualizando código desde repositorio..."
-if git pull origin main 2>/dev/null; then
+if git pull origin master 2>/dev/null; then
     success "Código actualizado desde Git"
 else
     warning "No se pudo actualizar desde Git (¿está inicializado el repositorio?)"
