@@ -9,6 +9,15 @@ const Layout = ({ children }) => {
     const navigate = useNavigate();
     const { user, logout, projectDetails } = useAuth();
     const [open, setOpen] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    // Clock effect
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     // Close mobile sidebar when route changes
     useEffect(() => {
@@ -169,8 +178,13 @@ const Layout = ({ children }) => {
                         Usuario: <span className="text-white font-semibold">{user?.username}</span>
                     </div>
                     {projectDetails?.currency && (
-                        <div className="mb-3 xl:mb-4 text-gray-300 hidden xl:block">Moneda: <span className="font-bold text-white">{projectDetails.currency}</span></div>
+                        <div className="mb-2 text-gray-300 hidden xl:block">Moneda: <span className="font-bold text-white">{projectDetails.currency}</span></div>
                     )}
+                    
+                    <div className="mb-3 text-gray-200 hidden xl:flex items-center gap-2 font-mono bg-black/30 px-3 py-2 rounded-xl w-full border border-white/10 shadow-inner">
+                        <Clock className="w-4 h-4 text-amber-400" /> 
+                        <span className="font-bold text-lg tracking-wider">{currentTime.toLocaleTimeString()}</span>
+                    </div>
 
                     <Link title="Cambiar Sucursal" to="/projects" className="flex items-center justify-center xl:justify-start gap-2 mb-3 text-gray-300 hover:text-white transition">
                         <ArrowLeftRight className="w-4 h-4 xl:w-4 xl:h-4" /> <span className="hidden xl:block">Cambiar Sucursal</span>
