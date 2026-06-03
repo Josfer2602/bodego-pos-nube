@@ -5,8 +5,16 @@ from typing import List
 import models, schemas, auth
 from database import get_db
 import os
+import sys
 import uuid
 from PIL import Image
+
+if getattr(sys, 'frozen', False):
+    cwd_path = os.path.join(os.environ.get('APPDATA', ''), 'Bodego')
+else:
+    cwd_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+UPLOAD_DIR = os.path.join(cwd_path, os.getenv("UPLOAD_DIR", "uploads"))
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
@@ -79,7 +87,7 @@ def delete_project(project_id: int, db: Session = Depends(get_db), current_user:
         if project.logo_url and project.logo_url.startswith("/uploads/"):
             try:
                 filename = project.logo_url.replace("/uploads/", "")
-                file_path = os.path.join("uploads", filename)
+                file_path = os.path.join(UPLOAD_DIR, filename)
                 if os.path.exists(file_path):
                     os.remove(file_path)
             except Exception as e:
@@ -116,7 +124,9 @@ async def upload_project_logo(project_id: int, file: UploadFile = File(...), db:
 
     file_extension = ".png" # Forzamos salida a png
     filename = f"{uuid.uuid4()}{file_extension}"
-    filepath = os.path.join("uploads", filename)
+    
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    filepath = os.path.join(UPLOAD_DIR, filename)
     
     try:
         image = Image.open(file.file)

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Package, Clock, Shield, LogOut, ArrowLeftRight, Tag, BarChart2, Wallet } from 'lucide-react';
+import { ShoppingCart, Package, Clock, Shield, LogOut, ArrowLeftRight, Tag, BarChart2, Wallet, Users } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { Toaster } from 'sonner';
 
@@ -10,6 +10,7 @@ const Layout = ({ children }) => {
     const { user, logout, projectDetails } = useAuth();
     const [open, setOpen] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [zoomLevel, setZoomLevel] = useState(1);
 
     // Clock effect
     useEffect(() => {
@@ -174,16 +175,31 @@ const Layout = ({ children }) => {
                 </nav>
 
                 <div className="p-2 xl:p-4 bg-black/20 text-[10px] xl:text-sm flex flex-col items-center xl:items-start text-center xl:text-left">
-                    <div className="mb-2 text-gray-300 hidden xl:block">
-                        Usuario: <span className="text-white font-semibold">{user?.username}</span>
+                    <div className="mb-2 w-full hidden xl:flex items-center justify-between text-gray-300">
+                        <span>Usuario: <span className="text-white font-semibold">{user?.username}</span></span>
+                        
+                        <div className="flex items-center gap-1 bg-black/30 rounded-lg p-1">
+                            <button onClick={() => setZoomLevel(z => Math.max(0.6, z - 0.1))} className="hover:bg-white/20 rounded p-0.5 text-gray-300 transition" title="Reducir (Zoom Out)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="8" x2="14" y1="11" y2="11"/></svg>
+                            </button>
+                            <span className="font-mono text-[10px] font-bold w-7 text-center">{Math.round(zoomLevel * 100)}%</span>
+                            <button onClick={() => setZoomLevel(z => Math.min(1.5, z + 0.1))} className="hover:bg-white/20 rounded p-0.5 text-gray-300 transition" title="Ampliar (Zoom In)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></svg>
+                            </button>
+                        </div>
                     </div>
                     {projectDetails?.currency && (
                         <div className="mb-2 text-gray-300 hidden xl:block">Moneda: <span className="font-bold text-white">{projectDetails.currency}</span></div>
                     )}
                     
-                    <div className="mb-3 text-gray-200 hidden xl:flex items-center gap-2 font-mono bg-black/30 px-3 py-2 rounded-xl w-full border border-white/10 shadow-inner">
-                        <Clock className="w-4 h-4 text-amber-400" /> 
-                        <span className="font-bold text-lg tracking-wider">{currentTime.toLocaleTimeString()}</span>
+                    <div className="mb-3 text-gray-200 hidden xl:flex flex-col gap-1 bg-black/30 px-3 py-2 rounded-xl w-full border border-white/10 shadow-inner">
+                        <div className="flex items-center justify-center gap-2">
+                            <Clock className="w-4 h-4 text-amber-400" /> 
+                            <span className="font-mono font-bold text-lg tracking-wider">{currentTime.toLocaleTimeString()}</span>
+                        </div>
+                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
+                            {currentTime.toLocaleDateString('es-ES', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                        </div>
                     </div>
 
                     <Link title="Cambiar Sucursal" to="/projects" className="flex items-center justify-center xl:justify-start gap-2 mb-3 text-gray-300 hover:text-white transition">
@@ -196,8 +212,9 @@ const Layout = ({ children }) => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-hidden flex flex-col bg-slate-50">
-                <div className="flex-1 overflow-hidden flex flex-col relative">
+            <div className="flex-1 overflow-hidden flex flex-col bg-slate-50 relative">
+
+                <div className="flex-1 overflow-hidden flex flex-col relative" style={{ zoom: zoomLevel }}>
                     {children}
                 </div>
             </div>

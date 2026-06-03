@@ -49,6 +49,8 @@ const Inventory = () => {
         expiration_date: '',
         barcode: ''
     });
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
 
     const currencySymbol = projectDetails?.currency === 'USD' ? '$' : projectDetails?.currency === 'EUR' ? '€' : 'S/';
 
@@ -150,6 +152,23 @@ const Inventory = () => {
         }
     };
 
+    const handleDeleteImage = async () => {
+        if (!editingId) {
+            setImageFile(null);
+            setImagePreview(null);
+            return;
+        }
+        try {
+            await api.delete(`/products/${editingId}/image?project_id=${activeProject}`);
+            setImageFile(null);
+            setImagePreview(null);
+            toast.success("Imagen eliminada");
+            fetchProducts();
+        } catch (error) {
+            toast.error("Error al eliminar la imagen");
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const payload = {
@@ -176,12 +195,22 @@ const Inventory = () => {
             }
 
             setIsSaving(true);
+            let savedProductId = editingId;
             if (editingId) {
                 await api.put(`/products/${editingId}`, payload);
                 toast.success("Producto actualizado");
             } else {
-                await api.post('/products/', payload);
+                const res = await api.post('/products/', payload);
+                savedProductId = res.data.id;
                 toast.success("Producto creado");
+            }
+
+            if (imageFile && savedProductId) {
+                const imgData = new FormData();
+                imgData.append('file', imageFile);
+                await api.post(`/products/${savedProductId}/image?project_id=${activeProject}`, imgData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
             }
 
             resetModal();
@@ -275,6 +304,8 @@ const Inventory = () => {
         setInputMode('manual');
         setBarcodeStatus(null);
         setBarcodeInput('');
+        setImageFile(null);
+        setImagePreview(product.image_url ? `${api.defaults.baseURL.replace('/api', '')}/uploads/${product.image_url}` : null);
         setShowModal(true);
     };
 
@@ -299,6 +330,8 @@ const Inventory = () => {
         setNewBarcodeStock('');
         setNewBarcodeDate('');
         setFormData({ name: '', cost: '', margin: '', price: '', stock: '', expiration_date: '', barcode: '' });
+        setImageFile(null);
+        setImagePreview(null);
     };
 
     const handleGenerateInternalCode = () => {
@@ -380,9 +413,9 @@ const Inventory = () => {
         <div className="flex flex-col h-screen bg-slate-50 overflow-hidden relative">
             {/* Top Bar */}
             <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shrink-0 shadow-sm z-10">
-                <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-gray-800">Inventario</h1>
-                    <span className="hidden md:block text-xs text-gray-400 border-l pl-3 ml-1">Gestión de stock y códigos de barras.</span>
+                <div>
+                    <h1 className="text-2xl font-black text-slate-800 tracking-tight">Inventario</h1>
+                    <p className="text-sm font-medium text-slate-500 mt-1">Gestión de stock y códigos de barras.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <input type="file" accept=".xlsx, .xls" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
@@ -424,10 +457,14 @@ const Inventory = () => {
                         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col flex-1 min-h-[300px]">
                             <span className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4 block">Detalle Seleccionado</span>
                             <div className="flex flex-col items-center text-center border-b border-gray-100 pb-5 mb-5">
-                                <div className="w-24 h-24 rounded-2xl flex items-center justify-center mb-4 shadow-sm border"
-                                    style={{ backgroundColor: 'var(--color-primary-bg)', borderColor: 'var(--color-primary-border)' }}>
-                                    <Package className="w-12 h-12" style={{ color: 'var(--color-primary)' }} />
-                                </div>
+                                {selectedProduct.image_url ? (
+                                    <img src={`${api.defaults.baseURL.replace('/api', '')}/uploads/${selectedProduct.image_url}`} alt={selectedProduct.name} className="w-24 h-24 rounded-2xl object-cover mb-4 shadow-sm border border-gray-200" />
+                                ) : (
+                                    <div className="w-24 h-24 rounded-2xl flex items-center justify-center mb-4 shadow-sm border"
+                                        style={{ backgroundColor: 'var(--color-primary-bg)', borderColor: 'var(--color-primary-border)' }}>
+                                        <Package className="w-12 h-12" style={{ color: 'var(--color-primary)' }} />
+                                    </div>
+                                )}
                                 <h3 className="text-xl font-black text-gray-800 leading-tight">{selectedProduct.name}</h3>
                                 <p className="text-emerald-600 font-bold mt-2 text-lg">{currencySymbol} {selectedProduct.price.toFixed(2)}</p>
                             </div>
@@ -449,12 +486,7 @@ const Inventory = () => {
                                 </div>
                             </div>
 
-                            <button 
-                                onClick={() => openBarcodeGenerator(selectedProduct.barcodes?.[0]?.code)}
-                                className="mt-5 w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-95"
-                            >
-                                <Barcode className="w-5 h-5"/> Generar Código
-                            </button>
+
                         </div>
                     ) : (
                         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col items-center justify-center text-center opacity-70">
@@ -468,12 +500,6 @@ const Inventory = () => {
                 <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
                     <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                         <h2 className="font-bold text-gray-800">Listado de Productos ({sortedProducts.length})</h2>
-                        <button 
-                            onClick={() => openBarcodeGenerator()}
-                            className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                        >
-                            <Barcode className="w-4 h-4"/> Imprimir Código Libre
-                        </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50 p-4">
@@ -505,13 +531,17 @@ const Inventory = () => {
                                             >
                                                 <td className="p-3">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded flex items-center justify-center shrink-0"
-                                                            style={isSelected
-                                                                ? { backgroundColor: 'var(--color-primary)', color: '#fff' }
-                                                                : { backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)' }
-                                                            }>
-                                                            <Package className="w-4 h-4"/>
-                                                        </div>
+                                                        {product.image_url ? (
+                                                            <img src={`${api.defaults.baseURL.replace('/api', '')}/uploads/${product.image_url}`} alt="" className="w-8 h-8 rounded object-cover shrink-0 border border-gray-200" />
+                                                        ) : (
+                                                            <div className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+                                                                style={isSelected
+                                                                    ? { backgroundColor: 'var(--color-primary)', color: '#fff' }
+                                                                    : { backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)' }
+                                                                }>
+                                                                <Package className="w-4 h-4"/>
+                                                            </div>
+                                                        )}
                                                         <span className="font-bold text-gray-800 text-sm">{product.name}</span>
                                                     </div>
                                                 </td>
@@ -712,6 +742,31 @@ const Inventory = () => {
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Nombre de Producto</label>
                                             <input type="text" name="name" required className="w-full border-2 border-slate-100 bg-slate-50 p-2.5 rounded-lg focus:border-blue-500 outline-none font-medium" value={formData.name} onChange={handleFormChange} placeholder="Ej. Gaseosa 3L" />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Imagen del Producto</label>
+                                            <div className="flex items-center gap-4">
+                                                {imagePreview && (
+                                                    <div className="relative shrink-0">
+                                                        <img src={imagePreview} alt="Preview" className="w-12 h-12 rounded object-cover border border-slate-200" />
+                                                        <button type="button" onClick={handleDeleteImage} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-sm transition" title="Eliminar imagen">
+                                                            <Trash2 className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                <input type="file" accept="image/*" className="w-full border-2 border-slate-100 bg-slate-50 p-1.5 rounded-lg text-sm focus:border-blue-500 outline-none" onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    setImageFile(file);
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => setImagePreview(reader.result);
+                                                        reader.readAsDataURL(file);
+                                                    } else {
+                                                        setImagePreview(null);
+                                                    }
+                                                }} />
+                                            </div>
                                         </div>
                                         
                                         {!editingId && inputMode === 'manual' && (

@@ -4,12 +4,20 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import Engine
 from dotenv import load_dotenv
 import os
+import sys
 
 # Cargar variables de entorno
 load_dotenv()
 
+if getattr(sys, 'frozen', False):
+    app_data = os.path.join(os.environ.get('APPDATA', ''), 'Bodego')
+    os.makedirs(app_data, exist_ok=True)
+    db_path = os.path.join(app_data, 'pos.db')
+else:
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pos.db')
+
 # Configuración de base de datos desde variables de entorno
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pos.db')}")
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{db_path}")
 
 engine = create_engine(
     DATABASE_URL,

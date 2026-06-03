@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../AuthContext';
-import { Shield, ShieldCheck, UserMinus, UserCheck, Plus, Lock, Users, Briefcase, Image as ImageIcon, Settings, PauseCircle, PlayCircle, Trash2, X, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Shield, ShieldCheck, UserMinus, UserCheck, Plus, Lock, Users, Briefcase, Image as ImageIcon, Settings, PauseCircle, PlayCircle, Trash2, X, Loader2, CheckCircle2, AlertTriangle, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AdminPanel = () => {
@@ -44,6 +44,24 @@ const AdminPanel = () => {
     // Estados para Reset de Contraseña
     const [resetUser, setResetUser] = useState(null);
     const [newPassword, setNewPassword] = useState('');
+
+    // Logs System
+    const [showLogsModal, setShowLogsModal] = useState(false);
+    const [logsContent, setLogsContent] = useState('');
+    const [loadingLogs, setLoadingLogs] = useState(false);
+
+    const handleViewLogs = async () => {
+        setShowLogsModal(true);
+        setLoadingLogs(true);
+        try {
+            const response = await api.get('/logs');
+            setLogsContent(response.data.logs || 'Sin contenido.');
+        } catch (error) {
+            setLogsContent(`Error al cargar logs: ${error.message}`);
+        } finally {
+            setLoadingLogs(false);
+        }
+    };
 
     // Alta Unificada (Superadmin)
     const [unifiedForm, setUnifiedForm] = useState({
@@ -114,14 +132,12 @@ const AdminPanel = () => {
 
     const fetchProjects = async () => {
         try {
-            // Un pequeño retraso para asegurar que el backend haya terminado de escribir en disco (SQLite)
-            // await new Promise(resolve => setTimeout(resolve, 300)); // ELIMINADO: Demasiado lento
             // Cache busting con timestamp para evitar respuestas obsoletas del navegador
             const resp = await api.get(`/projects/?_=${new Date().getTime()}`);
             // Convertir logo_url relativa a URL completa
             const projectsWithFullUrls = resp.data.map(p => {
                 if (p.logo_url && p.logo_url.startsWith('/uploads/')) {
-                    return { ...p, logo_url: `${api.defaults.baseURL}${p.logo_url}` };
+                    return { ...p, logo_url: `${api.defaults.baseURL.replace('/api', '')}${p.logo_url}` };
                 }
                 return p;
             });
@@ -358,35 +374,52 @@ const AdminPanel = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-slate-50 overflow-hidden relative">
+        <div className="flex flex-col h-screen overflow-hidden relative" style={{ background: 'linear-gradient(135deg, var(--color-primary-bg) 0%, #ffffff 100%)' }}>
+            {/* Elementos decorativos de fondo */}
+            <div className="absolute top-[-5%] right-[-5%] w-[500px] h-[500px] rounded-full blur-3xl opacity-10 pointer-events-none" style={{ background: 'var(--color-primary)' }}></div>
 
             {/* Top Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shrink-0 shadow-sm z-10">
+            <div className="bg-white/80 backdrop-blur-md border-b border-white/50 px-6 py-4 flex justify-between items-center shrink-0 shadow-sm z-10 relative">
                 <div className="flex items-center gap-3">
                     <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)' }}
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-md"
+                        style={{ 
+                            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)',
+                            color: 'white',
+                            boxShadow: '0 10px 20px -5px color-mix(in srgb, var(--color-primary) 40%, transparent)'
+                        }}
                     >
                         <Shield className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Consola Global</h1>
-                        <p className="text-xs text-gray-400 hidden md:block">Gestión de sucursales y usuarios del sistema.</p>
+                        <h1 className="text-2xl font-black text-gray-800 tracking-tight">Consola Global</h1>
+                        <p className="text-xs text-gray-500 font-medium hidden md:block">Gestión de sucursales y usuarios del sistema.</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                     <div className="hidden sm:flex flex-col items-end">
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Rol: {user.role}</p>
-                        <p className="text-[10px] text-gray-400">Panel Maestro</p>
+                        <p className="text-xs font-black text-slate-700 uppercase tracking-widest">Rol: {user.role}</p>
+                        <p className="text-[10px] text-slate-400 font-bold">Panel Maestro</p>
                     </div>
                     {user.role === 'superadmin' && (
-                        <button
-                            onClick={openCreateModal}
-                            className="text-white px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 text-sm"
-                            style={{ backgroundColor: 'var(--color-primary)' }}
-                        >
-                            <Plus className="w-4 h-4" /> Nueva Sucursal
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleViewLogs}
+                                className="text-slate-700 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-sm shadow-sm"
+                            >
+                                <FileText className="w-4 h-4" /> Logs Servidor
+                            </button>
+                            <button
+                                onClick={openCreateModal}
+                                className="text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-sm hover:-translate-y-0.5 active:translate-y-0"
+                                style={{ 
+                                    background: 'linear-gradient(135deg, var(--color-accent) 0%, #d83f0d 100%)',
+                                    boxShadow: '0 8px 20px -4px color-mix(in srgb, var(--color-accent) 40%, transparent)' 
+                                }}
+                            >
+                                <Plus className="w-4 h-4" /> Nueva Sucursal
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
@@ -1097,6 +1130,34 @@ const AdminPanel = () => {
                 </div>
             )}
 
+            {/* Logs Modal */}
+            {showLogsModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col h-[80vh] overflow-hidden">
+                        <div className="bg-slate-800 text-white px-6 py-4 flex justify-between items-center shrink-0">
+                            <div className="flex items-center gap-3">
+                                <FileText className="w-5 h-5 text-slate-400" />
+                                <h2 className="font-bold text-lg">Visor de Logs del Sistema</h2>
+                            </div>
+                            <button onClick={() => setShowLogsModal(false)} className="text-slate-400 hover:text-white transition">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="flex-1 bg-slate-900 p-4 overflow-y-auto font-mono text-sm relative">
+                            {loadingLogs ? (
+                                <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-3">
+                                    <Loader2 className="w-8 h-8 animate-spin" />
+                                    <p>Cargando logs del servidor...</p>
+                                </div>
+                            ) : (
+                                <pre className="text-green-400 whitespace-pre-wrap break-all">
+                                    {logsContent}
+                                </pre>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -4,6 +4,9 @@ from typing import List
 import pandas as pd
 import io
 import math
+import os
+import uuid
+import shutil
 from datetime import date
 import models, schemas, auth
 from database import get_db
@@ -278,3 +281,67 @@ async def bulk_upload_products(project_id: int, file: UploadFile = File(...), db
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error procesando el archivo Excel: {str(e)}")
+
+import sys
+
+if getattr(sys, 'frozen', False):
+    cwd_path = os.path.join(os.environ.get('APPDATA', ''), 'Bodego')
+else:
+    cwd_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+UPLOAD_DIR = os.path.join(cwd_path, os.getenv("UPLOAD_DIR", "uploads"))
+
+@router.post("/{product_id}/image", response_model=schemas.ProductResponse)
+async def upload_product_image(product_id: int, project_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    product = db.query(models.Product).filter(models.Product.id == product_id, models.Product.project_id == project_id).first()
+    
+    if product is None or not project:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+    if current_user.role != "superadmin" and project not in current_user.projects:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    if project.status != "active" and current_user.role != "superadmin":
+        raise HTTPException(status_code=403, detail="La sucursal está suspendida para ediciones")
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    
+    file_ext = file.filename.split(".")[-1] if "." in file.filename else "png"
+    new_filename = f"{uuid.uuid4().hex}.{file_ext}"
+    file_path = os.path.join(UPLOAD_DIR, new_filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    product.image_url = new_filename
+    db.commit()
+    db.refresh(product)
+    
+    return product
+
+@router.delete("/{product_id}/image")
+def delete_product_image(product_id: int, project_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    product = db.query(models.Product).filter(models.Product.id == product_id, models.Product.project_id == project_id).first()
+    
+    if product is None or not project:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+    if current_user.role != "superadmin" and project not in current_user.projects:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    if project.status != "active" and current_user.role != "superadmin":
+        raise HTTPException(status_code=403, detail="La sucursal está suspendida para ediciones")
+
+    if product.image_url:
+        file_path = os.path.join(UPLOAD_DIR, product.image_url)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                print(f"Error removing file {file_path}: {e}")
+        product.image_url = None
+        db.commit()
+    
+    return {"detail": "Imagen eliminada"}

@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+import os
 import models, schemas, auth
 from database import get_db
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+DEMO_MODE = os.getenv("DEMO_MODE", "False") == "True"
 
 @router.post("/", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_admin_user)):
@@ -35,6 +38,9 @@ def update_user_password(user_id: int, pw_data: schemas.UserPasswordUpdate, db: 
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    if DEMO_MODE:
+        raise HTTPException(status_code=403, detail="Acción bloqueada en la versión Demo.")
     
     hashed_password = auth.get_password_hash(pw_data.new_password)
     db_user.hashed_password = hashed_password
@@ -47,6 +53,9 @@ def toggle_user_status(user_id: int, db: Session = Depends(get_db), current_user
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    if DEMO_MODE:
+        raise HTTPException(status_code=403, detail="Acción bloqueada en la versión Demo.")
     
     if db_user.id == current_user.id:
         raise HTTPException(status_code=400, detail="No puedes anular tu propio usuario")

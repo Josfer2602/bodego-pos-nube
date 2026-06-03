@@ -71,6 +71,7 @@ class ProductBase(BaseModel):
     price: float
     stock: int
     expiration_date: Optional[date] = None
+    image_url: Optional[str] = None
 
 class ProductCreate(ProductBase):
     project_id: int 
@@ -125,6 +126,27 @@ class PromotionResponse(PromotionBase):
     id: int
     project_id: int
     products: List[ProductResponse] = []
+    model_config = ConfigDict(from_attributes=True)
+
+# --- Client Schemas ---
+class ClientBase(BaseModel):
+    name: str
+    document_id: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+
+class ClientCreate(ClientBase):
+    project_id: int
+
+class ClientUpdate(BaseModel):
+    name: Optional[str] = None
+    document_id: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+
+class ClientResponse(ClientBase):
+    id: int
+    project_id: int
     model_config = ConfigDict(from_attributes=True)
 
 # --- Sale Schemas ---

@@ -50,8 +50,8 @@ const CashHistory = () => {
             {/* Top Header */}
             <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shrink-0 shadow-sm z-10">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Historial de Cajas</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Auditoría de sesiones y cuadre de caja.</p>
+                    <h1 className="text-2xl font-black text-slate-800 tracking-tight">Historial de Cajas</h1>
+                    <p className="text-sm font-medium text-slate-500 mt-1">Auditoría de sesiones y cuadre de caja.</p>
                 </div>
                 <div className="flex gap-3">
                     <div className="hidden md:flex bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl items-center gap-3">
@@ -167,8 +167,9 @@ const CashHistory = () => {
                                                         {formatMoney((session.expected_cash || 0) + (session.expected_card || 0) + (session.expected_transfer || 0))}
                                                     </p>
                                                     <div className="text-[10px] text-slate-400 flex flex-col items-end mt-0.5 space-y-0.5">
-                                                        <span>💵 {formatMoney(session.expected_cash)}</span>
-                                                        <span>💳 {formatMoney(session.expected_card)}</span>
+                                                        <span>💵 Efectivo: {formatMoney(session.expected_cash)}</span>
+                                                        <span>💳 Tarjeta: {formatMoney(session.expected_card)}</span>
+                                                        <span>📱 Digital: {formatMoney(session.expected_transfer)}</span>
                                                     </div>
                                                 </td>
 
@@ -182,8 +183,9 @@ const CashHistory = () => {
                                                                 {formatMoney((session.actual_cash || 0) + (session.actual_card || 0) + (session.actual_transfer || 0))}
                                                             </p>
                                                             <div className="text-[10px] text-slate-400 flex flex-col items-end mt-0.5 space-y-0.5">
-                                                                <span>💵 {formatMoney(session.actual_cash)}</span>
-                                                                <span>💳 {formatMoney(session.actual_card)}</span>
+                                                                <span>💵 Efectivo: {formatMoney(session.actual_cash)}</span>
+                                                                <span>💳 Tarjeta: {formatMoney(session.actual_card)}</span>
+                                                                <span>📱 Digital: {formatMoney(session.actual_transfer)}</span>
                                                             </div>
                                                         </>
                                                     )}

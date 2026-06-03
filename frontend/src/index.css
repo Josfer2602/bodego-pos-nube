@@ -7,12 +7,13 @@
    AuthContext vía Layout
    ============================== */
 :root {
-  --color-primary: #2563eb;          /* default: blue-600  */
-  --color-primary-light: #3b82f6;    /* 10% más claro      */
-  --color-primary-dark:  #1d4ed8;    /* 10% más oscuro     */
-  --color-primary-bg:    #eff6ff;    /* tint muy claro (50)*/
-  --color-primary-border: #bfdbfe;   /* tint borde (200)   */
-  --color-primary-text:  #1e40af;    /* texto sobre fondo claro */
+  --color-primary: #312783;          /* default: Corporativo  */
+  --color-primary-light: #4c3f9e;    /* más claro      */
+  --color-primary-dark:  #221a63;    /* más oscuro     */
+  --color-primary-bg:    #f0eff6;    /* tint muy claro */
+  --color-primary-border: #d6d4e8;   /* tint borde     */
+  --color-primary-text:  #1d1752;    /* texto oscuro   */
+  --color-accent: #E94E1B;           /* acento naranja */
 }
 
 /* Utilidades semánticas usando la variable */

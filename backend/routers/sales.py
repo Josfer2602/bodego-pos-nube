@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from datetime import date
 import models, schemas, auth
@@ -19,7 +19,10 @@ def read_sales(project_id: int, skip: int = 0, limit: int = 100, db: Session = D
     if project.status != "active" and current_user.role != "superadmin":
         raise HTTPException(status_code=403, detail="La sucursal se encuentra suspendida.")
 
-    sales = db.query(models.Sale).filter(models.Sale.project_id == project_id).offset(skip).limit(limit).all()
+    sales = db.query(models.Sale).options(
+        joinedload(models.Sale.details).joinedload(models.SaleDetail.product),
+        joinedload(models.Sale.details).joinedload(models.SaleDetail.barcode)
+    ).filter(models.Sale.project_id == project_id).order_by(models.Sale.id.desc()).offset(skip).limit(limit).all()
     return sales
 
 @router.post("/", response_model=schemas.SaleResponse)

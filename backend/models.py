@@ -62,6 +62,7 @@ class Product(Base):
     stock = Column(Integer, default=0)
     expiration_date = Column(Date, nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id", ondelete='CASCADE'))
+    image_url = Column(String, nullable=True)
 
     project = relationship("Project", back_populates="products")
     sale_details = relationship("SaleDetail", back_populates="product", cascade="all, delete-orphan", passive_deletes=True)
@@ -76,7 +77,7 @@ class CashSession(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     status = Column(String, default="open")  # open / closed
     
-    opened_at = Column(DateTime, default=datetime.datetime.utcnow)
+    opened_at = Column(DateTime, default=datetime.datetime.now)
     closed_at = Column(DateTime, nullable=True)
     
     initial_cash = Column(Float, default=0.0)
@@ -122,11 +123,23 @@ class Promotion(Base):
     project = relationship("Project", back_populates="promotions")
     products = relationship("Product", secondary=promotion_product, back_populates="promotions")
 
+class Client(Base):
+    __tablename__ = "clients"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    document_id = Column(String, nullable=True) # DNI, RUC
+    phone = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete='CASCADE'))
+    
+    project = relationship("Project")
+
 class Sale(Base):
     __tablename__ = "sales"
 
     id = Column(Integer, primary_key=True, index=True)
-    date = Column(DateTime, default=datetime.datetime.utcnow)
+    date = Column(DateTime, default=datetime.datetime.now)
     total = Column(Float)
     payment_method = Column(String, default="efectivo")
     project_id = Column(Integer, ForeignKey("projects.id", ondelete='CASCADE'))

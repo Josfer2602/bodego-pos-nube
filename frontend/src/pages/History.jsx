@@ -40,12 +40,13 @@ const History = () => {
         let filtered = [...salesList];
         
         if (startDate) {
-            filtered = filtered.filter(s => new Date(s.date) >= new Date(startDate));
+            const startStr = startDate + "T00:00:00";
+            filtered = filtered.filter(s => new Date(s.date) >= new Date(startStr));
         }
+
         if (endDate) {
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999);
-            filtered = filtered.filter(s => new Date(s.date) <= end);
+            const endStr = endDate + "T23:59:59";
+            filtered = filtered.filter(s => new Date(s.date) <= new Date(endStr));
         }
         if (paymentMethod) {
             filtered = filtered.filter(s => s.payment_method === paymentMethod);
@@ -240,14 +241,23 @@ const History = () => {
             ...rows.map(e => e.join(";"))
         ].join("\n");
 
-        const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Reporte_Ventas_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const filename = `Reporte_Ventas_${new Date().toISOString().split('T')[0]}.csv`;
+        const finalContent = "\ufeff" + csvContent;
+
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.save_csv) {
+            window.pywebview.api.save_csv(filename, finalContent).then((success) => {
+                if (success) toast.success("Exportado correctamente a CSV");
+            });
+        } else {
+            const blob = new Blob([finalContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     };
 
     const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.total, 0);
@@ -336,8 +346,8 @@ const History = () => {
             {/* Top Header */}
             <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shrink-0 shadow-sm z-10">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Historial de Ventas</h1>
-                    <p className="text-sm text-gray-500 mt-1">Revisa, filtra y exporta las transacciones de tu sucursal.</p>
+                    <h1 className="text-2xl font-black text-slate-800 tracking-tight">Historial de Ventas</h1>
+                    <p className="text-sm font-medium text-slate-500 mt-1">Revisa, filtra y exporta las transacciones de tu sucursal.</p>
                 </div>
                 <div className="flex gap-4">
                     <div className="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl flex items-center gap-3">
@@ -417,7 +427,6 @@ const History = () => {
                                 <tr>
                                     <th className="p-4 whitespace-nowrap">Fecha y Hora</th>
                                     <th className="p-4">Usuario / Caja</th>
-                                    <th className="p-4">Cliente</th>
                                     <th className="p-4 text-center">Comprobante</th>
                                     <th className="p-4 text-center">Metodo Pago</th>
                                     <th className="p-4 text-right">Total</th>
@@ -450,9 +459,7 @@ const History = () => {
                                             <td className="p-4 text-sm text-slate-600">
                                                 Usuario POS
                                             </td>
-                                            <td className="p-4 text-sm text-slate-600">
-                                                Cliente General
-                                            </td>
+
                                             <td className="p-4 text-center">
                                                 <span className="inline-block px-2 py-1 bg-slate-100 border border-slate-200 rounded text-xs font-mono text-slate-600">
                                                     TKT-{String(sale.id).padStart(5, '0')}

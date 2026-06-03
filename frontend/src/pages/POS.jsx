@@ -10,6 +10,8 @@ const POS = () => {
     const [promotions, setPromotions] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [cart, setCart] = useState([]);
+    const [activeCartIndex, setActiveCartIndex] = useState(-1);
+    const [selectedProductInfo, setSelectedProductInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showCart, setShowCart] = useState(false); // Para mobile: mostrar/ocultar carrito
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -19,7 +21,7 @@ const POS = () => {
     const [showSalesModal, setShowSalesModal] = useState(false);
     const [recentSales, setRecentSales] = useState([]);
     const [loadingSales, setLoadingSales] = useState(false);
-
+    
     const searchInputRef = React.useRef(null);
 
     // Cash Session States
@@ -74,6 +76,38 @@ const POS = () => {
                 } else {
                     toast.error("No hay ninguna venta reciente para imprimir");
                 }
+                return;
+            }
+
+            // Keyboard Navigation para el Carrito
+            if (cart.length > 0) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setActiveCartIndex(prev => (prev < cart.length - 1 ? prev + 1 : prev));
+                    return;
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setActiveCartIndex(prev => (prev > 0 ? prev - 1 : prev));
+                    return;
+                }
+
+                if (activeCartIndex >= 0 && activeCartIndex < cart.length) {
+                    const activeItem = cart[activeCartIndex];
+                    if (e.key === '+') {
+                        e.preventDefault();
+                        updateQuantity(activeItem.uniqueId, 1, activeItem.stock);
+                        return;
+                    } else if (e.key === '-') {
+                        e.preventDefault();
+                        updateQuantity(activeItem.uniqueId, -1, activeItem.stock);
+                        return;
+                    } else if (e.key === 'Delete') {
+                        e.preventDefault();
+                        removeFromCart(activeItem.uniqueId);
+                        setActiveCartIndex(prev => Math.min(prev, cart.length - 2));
+                        return;
+                    }
+                }
             }
 
             // F2 o cualquier caracter alfanumérico enfoca el buscador instantáneamente
@@ -93,7 +127,7 @@ const POS = () => {
 
         window.addEventListener('keydown', handleGlobalKeyDown);
         return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-    }, [cart, paymentMethod, lastCompletedSale]);
+    }, [cart, paymentMethod, lastCompletedSale, activeCartIndex]);
 
     const handlePrintTicket = (saleData) => {
         if (!saleData) return;
@@ -136,16 +170,13 @@ const POS = () => {
             <html>
             <head>
                 <style>
-                    @page {
-                        size: ${widthSetting} auto;
-                        margin: 0;
-                    }
-                    body {
-                        font-family: 'Courier New', Courier, monospace;
-                        width: ${printableWidth};
-                        margin: 0;
-                        padding: ${isNarrow ? '2mm 1mm 6mm 1mm' : '4mm 4mm 10mm 4mm'};
-                        font-size: ${bodyFontSize};
+                    @page { size: ${printableWidth} auto; margin: 0; }
+                    body { 
+                        font-family: 'Courier New', Courier, monospace; 
+                        width: ${printableWidth}; 
+                        margin: 0 auto; 
+                        padding: 0;
+                        font-size: 11px;
                         color: #000;
                         line-height: 1.2;
                     }
@@ -364,6 +395,22 @@ const POS = () => {
         const cartItem = cart.find(item => item.uniqueId === uniqueId);
 
         let availableStock = specificBarcode ? specificBarcode.stock : product.stock;
+        
+        setSelectedProductInfo({
+            name: specificBarcode ? `${product.name} (Lote: ${specificBarcode.code})` : product.name,
+            stock: availableStock
+        });
+
+        // Verificar vencimiento
+        let expDate = specificBarcode ? specificBarcode.expiration_date : product.expiration_date;
+        if (expDate) {
+            const exp = new Date(expDate + "T00:00:00");
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (exp < today) {
+                toast.error(`ATENCIÓN: ${product.name} se encuentra vencido desde ${exp.toLocaleDateString()}`);
+            }
+        }
 
         if (cartItem) {
             if (cartItem.quantity + 1 > availableStock) {
@@ -390,7 +437,8 @@ const POS = () => {
                 original_price: itemInfo.original,
                 has_discount: itemInfo.hasDiscount,
                 quantity: 1,
-                stock: availableStock
+                stock: availableStock,
+                image_url: product.image_url
             }]);
         }
     };
@@ -566,10 +614,23 @@ const POS = () => {
         }
     }, [searchQuery, products]);
 
+    // Lightweight Fuzzy Match
+    const fuzzyMatch = (str, pattern) => {
+        if (!str || !pattern) return false;
+        const s = String(str).toLowerCase();
+        const p = String(pattern).toLowerCase();
+        if (s.includes(p)) return true;
+        let pIdx = 0;
+        for (let i = 0; i < s.length; i++) {
+            if (s[i] === p[pIdx]) pIdx++;
+            if (pIdx === p.length) return true;
+        }
+        return false;
+    };
+
     const filteredProducts = products.filter(product => {
-        const searchLower = searchQuery.toLowerCase();
-        const barcodesMatch = product.barcodes?.some(bc => bc.code.toLowerCase().includes(searchLower));
-        return product.name.toLowerCase().includes(searchLower) || barcodesMatch;
+        const barcodesMatch = product.barcodes?.some(bc => fuzzyMatch(bc.code, searchQuery));
+        return fuzzyMatch(product.name, searchQuery) || barcodesMatch;
     });
 
     const isProductExpired = (product) => {
@@ -781,9 +842,9 @@ const POS = () => {
 
             {/* Top Bar (Header) */}
             <div className="bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shrink-0 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-gray-800">Ventas</h1>
-                    <span className="hidden md:block text-xs text-gray-400 border-l pl-3 ml-1">Flujo POS completo con caja, pago, facturación e impresión.</span>
+                <div>
+                    <h1 className="text-2xl font-black text-slate-800 tracking-tight">Ventas</h1>
+                    <p className="text-sm font-medium text-slate-500 mt-1">Flujo POS completo con caja, pago, facturación e impresión.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="hidden sm:flex bg-gray-100 text-gray-600 px-3 py-1.5 rounded-md text-sm font-medium items-center gap-2">
@@ -865,14 +926,23 @@ const POS = () => {
                             </div>
                             
                             {/* Quick Categories/Favorites could go here, for now stock info */}
-                            <div className="mt-4 flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-                                <div className="flex items-center gap-2 text-gray-600">
+                            <div className="mt-4 flex flex-col bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
+                                <div className="flex items-center gap-2 text-gray-600 mb-1">
                                     <Package className="w-4 h-4"/>
-                                    <span className="text-xs font-bold">Stock Total Disponible:</span>
+                                    <span className="text-xs font-bold">Stock del último producto escaneado:</span>
                                 </div>
-                                <span className="text-sm font-black text-teal-600">
-                                    {products.reduce((acc, p) => acc + p.stock, 0)}
-                                </span>
+                                {selectedProductInfo ? (
+                                    <div className="flex justify-between items-center w-full">
+                                        <span className="text-xs text-gray-500 truncate mr-2" title={selectedProductInfo.name}>
+                                            {selectedProductInfo.name}
+                                        </span>
+                                        <span className="text-sm font-black text-teal-600">
+                                            {selectedProductInfo.stock} unds
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <span className="text-xs text-gray-400">Ningún producto escaneado</span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -905,16 +975,20 @@ const POS = () => {
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {cart.map((item, idx) => (
-                                        <tr key={item.uniqueId} className="hover:bg-slate-50 transition group">
+                                        <tr key={item.uniqueId} className={`transition group ${activeCartIndex === idx ? 'bg-teal-50 border-l-4 border-teal-500' : 'hover:bg-slate-50 border-l-4 border-transparent'}`}>
                                             <td className="p-3 text-xs font-mono text-gray-500">
                                                 F001-{String(idx+1).padStart(4, '0')}
                                             </td>
                                             <td className="p-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded flex items-center justify-center shrink-0"
-                                                        style={{ backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)' }}>
-                                                        <Package className="w-4 h-4"/>
-                                                    </div>
+                                                    {item.image_url ? (
+                                                        <img src={`${api.defaults.baseURL.replace('/api', '')}/uploads/${item.image_url}`} alt="" className="w-8 h-8 rounded object-cover shrink-0 border border-gray-200" />
+                                                    ) : (
+                                                        <div className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+                                                            style={{ backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)' }}>
+                                                            <Package className="w-4 h-4"/>
+                                                        </div>
+                                                    )}
                                                     <div>
                                                         <div className="font-bold text-gray-800 text-sm leading-tight">{item.name}</div>
                                                         {item.has_discount && <div className="text-[9px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">Oferta Aplicada</div>}
@@ -962,6 +1036,7 @@ const POS = () => {
                             
                             {/* Payment Method & Actions */}
                             <div className="flex-1 flex flex-col gap-4 w-full">
+
                                 <div>
                                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 block">Método de Pago</span>
                                     <div className="flex gap-2">
