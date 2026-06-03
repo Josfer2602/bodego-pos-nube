@@ -140,7 +140,7 @@ const History = () => {
             </head>
             <body>
                 ${logoHtml}
-                <div class="text-center bold header">${projectDetails?.name || 'VENTAS YA'}</div>
+                <div class="text-center bold header">${projectDetails?.name || 'BODEGO POS'}</div>
                 <div class="text-center subtitle">BOLETA DE VENTA</div>
                 
                 ${projectDetails?.receipt_header ? `
