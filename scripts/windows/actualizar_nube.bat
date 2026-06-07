@@ -1,5 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
+cd %~dp0\..\..
 echo =======================================================
 echo     Actualizador TOTAL Bodego POS (Git + Hetzner)
 echo =======================================================
