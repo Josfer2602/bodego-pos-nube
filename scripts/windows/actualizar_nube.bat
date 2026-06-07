@@ -29,7 +29,7 @@ echo Por favor, ingresa la contrasena de tu servidor:
 echo (Recuerda que al escribirla no se veran los asteriscos)
 echo.
 
-ssh -t root@178.156.196.20 "cd /var/www/app-ventas && bash scripts/server/deploy.sh"
+ssh -t root@178.156.196.20 "cd /var/www/app-ventas && git pull origin master && bash scripts/server/deploy.sh"
 
 echo.
 echo =======================================================
