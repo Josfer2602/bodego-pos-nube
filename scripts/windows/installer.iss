@@ -6,11 +6,11 @@ DefaultGroupName=Bodego
 UninstallDisplayIcon={app}\Bodego.exe
 Compression=lzma2
 SolidCompression=yes
-OutputDir=Output
+OutputDir=..\..\Output
 OutputBaseFilename=Instalador_Bodego
 
 [Files]
-Source: "backend\dist\Bodego.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\backend\dist\Bodego.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Bodego"; Filename: "{app}\Bodego.exe"

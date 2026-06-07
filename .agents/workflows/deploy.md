@@ -13,13 +13,13 @@ Este workflow ejecuta el despliegue completo de la aplicación POS ERP en el ser
 2. Si el usuario acepta el backup, ejecutar el script de respaldo:
 // turbo
 ```bash
-cd /var/www/app-ventas && bash backup_app.sh
+cd /var/www/app-ventas && bash scripts/server/backup_app.sh
 ```
 
 3. Ejecutar el script de despliegue completo:
 // turbo
 ```bash
-cd /var/www/app-ventas && bash deploy.sh
+cd /var/www/app-ventas && bash scripts/server/deploy.sh
 ```
 
 4. Verificar que los servicios estén activos después del despliegue:

@@ -106,9 +106,9 @@ echo "=================================================="
 echo
 echo "📋 Próximos pasos:"
 echo "  1. Clonar tu repositorio en /var/www/app-ventas"
-echo "  2. Ejecutar el script de despliegue: ./deploy.sh"
-echo "  3. Configurar Nginx: cp nginx.conf.example /etc/nginx/sites-available/app-ventas"
-echo "  4. Configurar el servicio: cp backend.service.example /etc/systemd/system/backend.service"
+echo "  2. Ejecutar el script de despliegue: bash scripts/server/deploy.sh"
+echo "  3. Configurar Nginx: cp scripts/server/nginx.conf.example /etc/nginx/sites-available/app-ventas"
+echo "  4. Configurar el servicio: cp scripts/server/backend.service.example /etc/systemd/system/backend.service"
 echo "  5. Obtener certificado SSL si es necesario: certbot --nginx"
 echo
 echo "🆘 Comandos útiles:"

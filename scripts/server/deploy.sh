@@ -38,9 +38,9 @@ fi
 log "Iniciando despliegue del sistema POS ERP..."
 
 # Backup automático antes de actualizar
-if [ -f "backup_app.sh" ]; then
+if [ -f "scripts/server/backup_app.sh" ]; then
     log "Creando backup automático..."
-    ./backup_app.sh || warning "El backup falló, pero continuamos con el despliegue"
+    bash scripts/server/backup_app.sh || warning "El backup falló, pero continuamos con el despliegue"
 fi
 
 # Actualizar código desde Git

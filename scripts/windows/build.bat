@@ -1,4 +1,5 @@
 @echo off
+cd %~dp0\..\..
 echo =======================================================
 echo     Compilador Automatico Bodego
 echo =======================================================
@@ -44,7 +45,7 @@ echo.
 echo =======================================================
 echo     Creando el Instalador Setup (Inno Setup)...
 echo =======================================================
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer.iss"
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "scripts\windows\installer.iss"
 
 echo.
 echo =======================================================
